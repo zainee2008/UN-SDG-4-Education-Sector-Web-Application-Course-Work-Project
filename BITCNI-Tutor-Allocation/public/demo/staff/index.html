@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Homepage</title>
+    <link rel="stylesheet" href="../GeneralCSS/Style.css">
+    <style>
+        .staff_home_stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .staff_home_unfulfilled_stats,
+        .staff_home_fulfilled_stats,
+        .staff_home_tutors_stats {
+            border: 1px solid #cccccc;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chart {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .report-section {
+            margin-top: 30px;
+        }
+
+        #high_priority_report_table {
+            width: 100%;
+        }
+
+        #high_priority_report_table:empty {
+            display: none;
+        }
+        .nav {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+        <!--Banner image-->
+        <div class="banner" style="text-align: center;">
+            <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+        </div>
+
+        <!--Nav bar-->
+        <div class="nav">
+            <a href="index.html">Home</a>
+            <a href="schools.html">Schools</a>
+            <a href="tutors.html">Tutors</a>
+            <a href="requests.html">Requests</a>
+            <a href="assignments.html">Assignments</a>
+            <a class="nav-switch" href="../school/index.html">Go To School Side</a>
+        </div>
+
+        <main class="main">
+            <h1 style="font: bold 42px Arial, sans-serif; color: #7a0000; margin: 10px 0 25px 0; text-align: center;">
+                Dashboard
+            </h1>
+
+            <div class="staff_home_stats">
+                <div class="staff_home_unfulfilled_stats">
+                    <h3>Unfulfilled Requests</h3>
+                    <p id="stat-unfulfilled">Loading...</p>
+                </div>
+
+                <div class="staff_home_fulfilled_stats">
+                    <h3>Fulfilled %</h3>
+                    <p id="stat-fulfilled">Loading...</p>
+                </div>
+
+                <div class="staff_home_tutors_stats">
+                    <h3>Tutors Assigned</h3>
+                    <p id="stat-tutors">Loading...</p>
+                </div>
+            </div>
+
+            <div class="chart">
+                <canvas id="unfulfilled_by_subject"></canvas>
+            </div>
+
+            <div class="report-section">
+                <h3>Unfulfilled High Priority Requests</h3>
+                <p id="report-feedback">Loading report...</p>
+                <table id="high_priority_report_table"></table>
+            </div>
+        </main>
+
+    <script src="../vendor/sqljs/sql-wasm.js"></script>
+    <script src="../js/browser-db.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            // -------------------- DOM References --------------------
+            const statUnfulfilled = document.getElementById("stat-unfulfilled")
+            const statFulfilled = document.getElementById("stat-fulfilled")
+            const statTutors = document.getElementById("stat-tutors")
+            const chartCanvas = document.getElementById("unfulfilled_by_subject")
+            const reportFeedback = document.getElementById("report-feedback")
+            const reportTable = document.getElementById("high_priority_report_table")
+
+            // -------------------- Report 1: Unfulfilled High Priority Requests --------------------
+            /*
+            REPORT 1: Unfulfilled High Priority Requests
+            Author: Karl
+            Business Question: Which high-priority requests are still unallocated?
+            Why this report is useful: This report helps staff identify urgent requests that have not yet been assigned, so they can prioritise schools with higher deprivation rank and requests that have remained open longer.
+            Tables used: tblRequest, tblAssignment, tblSchool, tblDeprivation
+            */
+            const unfulfilled_high_priority_report_SQL = `
+                SELECT
+                    r.requestID,
+                    s.schoolName,
+                    sub.subjectName,
+                    d.deprivationRank,
+                    DATEDIFF(CURRENT_DATE(), r.requestDateCreated) AS daysUnfulfilled
+                FROM tblRequest AS r
+                LEFT JOIN tblAssignment AS a ON r.requestID = a.requestID
+                INNER JOIN tblSchool AS s ON s.schoolID = r.schoolID
+                INNER JOIN tblSubject AS sub ON sub.subjectID = r.subjectID
+                INNER JOIN tblDeprivation AS d ON s.SOAcode = d.SOAcode
+                WHERE a.requestID IS NULL AND d.deprivationRank > 400
+                ORDER BY d.deprivationRank DESC, daysUnfulfilled DESC
+                LIMIT 50
+            `
+
+            // -------------------- Chart Query --------------------
+            const unfulfilled_by_subject_SQL = `
+                SELECT
+                    sub.subjectName AS label,
+                    COUNT(*) AS total
+                FROM tblRequest AS r
+                JOIN tblSubject AS sub ON r.subjectID = sub.subjectID
+                LEFT JOIN tblAssignment AS a ON r.requestID = a.requestID
+                WHERE a.requestID IS NULL
+                GROUP BY sub.subjectName
+                ORDER BY total DESC
+                LIMIT 10
+            `
+
+            // -------------------- Staff Homepage Stats Queries --------------------
+            const unfulfilled_requests_SQL = `
+                SELECT
+                    COUNT(*) AS count
+                FROM tblRequest AS r
+                LEFT JOIN tblAssignment AS a ON r.requestID = a.requestID
+                WHERE a.requestID IS NULL
+            `
+
+            const total_requests_SQL = `
+                SELECT
+                    COUNT(*) AS count
+                FROM tblRequest
+            `
+
+            const fulfilled_requests_SQL = `
+                SELECT
+                    COUNT(DISTINCT r.requestID) AS count
+                FROM tblRequest AS r
+                JOIN tblAssignment AS a ON r.requestID = a.requestID
+            `
+
+            const tutors_assigned_SQL = `
+                SELECT
+                    COUNT(DISTINCT tutorID) AS count
+                FROM tblAssignment
+                WHERE assignmentDateClosed IS NULL
+            `
+
+            // -------------------- Run Stats Queries --------------------
+            const unfulfilledRequestsResult = await runSQL(cleanSQL(unfulfilled_requests_SQL))
+            const totalRequestsResult = await runSQL(cleanSQL(total_requests_SQL))
+            const fulfilledRequestsResult = await runSQL(cleanSQL(fulfilled_requests_SQL))
+            const tutorsAssignedResult = await runSQL(cleanSQL(tutors_assigned_SQL))
+
+            // -------------------- Render Stats --------------------
+            if (unfulfilledRequestsResult && unfulfilledRequestsResult.data.length > 0) {
+                statUnfulfilled.textContent = unfulfilledRequestsResult.data[0].count
+            } else {
+                statUnfulfilled.textContent = "N/A"
+            }
+
+            if (
+                fulfilledRequestsResult && fulfilledRequestsResult.data.length > 0 &&
+                totalRequestsResult && totalRequestsResult.data.length > 0
+            ) {
+                if (totalRequestsResult.data[0].count > 0) {
+                    const percentage = Math.round(
+                        (fulfilledRequestsResult.data[0].count / totalRequestsResult.data[0].count) * 100
+                    )
+                    statFulfilled.textContent = percentage + "%"
+                } else {
+                    statFulfilled.textContent = "0%"
+                }
+            } else {
+                statFulfilled.textContent = "N/A"
+            }
+
+            if (tutorsAssignedResult && tutorsAssignedResult.data.length > 0) {
+                statTutors.textContent = tutorsAssignedResult.data[0].count
+            } else {
+                statTutors.textContent = "N/A"
+            }
+
+            // -------------------- Render Chart --------------------
+            const unfulfilledBySubjectResult = await runSQL(cleanSQL(unfulfilled_by_subject_SQL))
+
+            if (unfulfilledBySubjectResult && unfulfilledBySubjectResult.data.length > 0) {
+                const configObject = {
+                    type: "bar",
+                    data: {
+                        labels: unfulfilledBySubjectResult.data.map(row => row.label),
+                        datasets: [
+                            {
+                                label: "Unfulfilled requests",
+                                data: unfulfilledBySubjectResult.data.map(row => row.total)
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                }
+
+                new Chart(chartCanvas, configObject)
+            }
+
+            // -------------------- Render Tabular Report --------------------
+            await printTable(cleanSQL(unfulfilled_high_priority_report_SQL), "#high_priority_report_table")
+
+            const totalRows = reportTable.querySelectorAll("tr").length
+            const dataRowCount = Math.max(0, totalRows - 1)
+
+            if (dataRowCount > 0) {
+                reportFeedback.textContent = ""
+            } else {
+                reportFeedback.textContent = "No matching results found"
+            }
+        })
+    </script>
+</body>
+</html>

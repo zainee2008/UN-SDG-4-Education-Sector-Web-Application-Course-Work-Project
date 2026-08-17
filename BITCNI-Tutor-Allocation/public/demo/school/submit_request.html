@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submit Request</title>
+<link rel="stylesheet" href="../GeneralCSS/Style.css">
+<style>
+h1 {
+  font: bold 35px Arial, sans-serif;
+  color: #7a0000;
+  margin: 20px 0 10px 20px;
+}
+
+#submitRequestForm {
+  width: 60%;
+  margin: 20px auto;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 10px;
+  padding: 30px;
+}
+
+.form-row {
+  margin-bottom: 20px;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font: bold 18px Arial, sans-serif;
+  color: #7a0000;
+}
+
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid black;
+  border-radius: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.form-row textarea {
+  height: 120px;
+  resize: vertical;
+}
+
+.form-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.form-actions a {
+  color: #cc0000;
+  font: bold 16px Arial, sans-serif;
+  text-decoration: none;
+  padding: 0 10px;
+}
+
+.form-actions a:hover {
+  text-decoration: underline;
+}
+
+#message {
+  margin-top: 15px;
+  font: bold 16px Arial, sans-serif;
+  color: #cc0000;
+}
+</style>
+</head>
+
+<body>
+
+<!-- banner containing image -->
+<div class="banner" style="text-align: center;">
+<img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+</div>
+<br>
+
+<!-- Nav bar -->
+<div class="nav">
+        <a href="index.html">Home</a> 
+        <a href="my_requests.html">Active Tutor Requests</a> 
+        <a href="submit_request.html">Request a Tutor</a> 
+        <a href="edit_request.html">Modify Tutor Request</a> 
+        <a href="my_tutor.html">View School tutors</a>
+        <a class="nav-switch" href="../staff/index.html">Go to Staff Side</a>
+    </div>
+
+<h1>Create a New Tutor Request</h1>
+
+<div class="main">
+<p>Fill in the form below to submit a new request for a tutor for your school.</p>
+
+<form id="submitRequestForm">
+
+  <div class="form-row">
+    <label for="schoolID">School ID Number</label>
+    <input type="number" id="schoolID" name="schoolID" required>
+  </div>
+  <br>
+
+  <div class="form-row">
+    <label for="subjectID">Subject Name</label>
+    <select id="subjectID" name="subjectID" required>
+      <option value="">Select a subject</option>
+    </select>
+  </div>
+  <br>
+
+  <div class="form-row">
+    <label for="educationLevel">Education Level</label>
+    <select id="educationLevel" name="educationLevel" required>
+      <option value="">Select a level</option>
+      <option value="Primary">Primary</option>
+      <option value="Secondary">Secondary</option>
+      <option value="Tertiary">Tertiary</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
+  <br>
+
+  <div class="form-row">
+    <label for="preferred-tutor">Preferred Tutor (optional)</label>
+    <input type="text" id="preferred-tutor" name="preferredTutor" placeholder="Leave blank if no preference">
+  </div>
+  <br>
+
+  <div class="form-row">
+    <label for="notes">Additional Notes</label><br>
+    <textarea id="notes" name="notes" placeholder="Any extra information..."></textarea>
+  </div>
+  <br>
+
+  <button type="submit">Submit Request</button>
+
+
+</form>
+<br>
+
+<div id="message" class="message"></div>
+
+</div>
+
+<script src="../vendor/sqljs/sql-wasm.js"></script>
+<script src="../js/browser-db.js"></script>
+<script src="../js/main.js"></script>
+<script>
+const escapeSqlValue = (value) => String(value).replace(/'/g, "''").trim();
+
+const setMessage = (text, isError = false) => {
+  const message = document.querySelector("#message");
+  if (!message) {
+    return;
+  }
+
+  message.textContent = text;
+  message.style.color = isError ? "#cc0000" : "#0a6b2d";
+};
+
+const getSelectedSchoolId = () => {
+  if (typeof getSchoolSelection !== "function") {
+    return null;
+  }
+
+  const selectedSchool = getSchoolSelection();
+  return selectedSchool?.schoolID ?? null;
+};
+
+const loadSubjects = async () => {
+  const subjectSelect = document.querySelector("#subjectID");
+  if (!subjectSelect) {
+    return;
+  }
+
+  try {
+    const result = await runSQL(
+      "SELECT subjectID, subjectName FROM tblSubject ORDER BY subjectName ASC;"
+    );
+
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    subjectSelect.innerHTML = '<option value="">Select a subject</option>';
+
+    for (const subject of result.data || []) {
+      if (subject.subjectName && subject.subjectName.toLowerCase() === "mathhh") {
+        continue;
+      }
+
+      const option = document.createElement("option");
+      option.value = subject.subjectID;
+      option.textContent = subject.subjectName;
+      subjectSelect.appendChild(option);
+    }
+  } catch (error) {
+    subjectSelect.innerHTML = '<option value="">Subjects could not be loaded</option>';
+    setMessage(`Subjects could not be loaded: ${error.message}`, true);
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("#submitRequestForm");
+  const schoolIdInput = document.querySelector("#schoolID");
+
+  if (!form) {
+    return;
+  }
+
+  const selectedSchoolId = getSelectedSchoolId();
+  if (selectedSchoolId && schoolIdInput) {
+    schoolIdInput.value = selectedSchoolId;
+  }
+
+  loadSubjects();
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const schoolID = document.querySelector("#schoolID").value.trim();
+    const subjectID = document.querySelector("#subjectID").value;
+    const educationLevel = document.querySelector("#educationLevel").value;
+    const preferredTutor = document.querySelector("#preferred-tutor").value.trim();
+    const notes = document.querySelector("#notes").value.trim();
+
+    if (!schoolID || !subjectID || !educationLevel) {
+      setMessage("Please complete the school, subject, and education level fields.", true);
+      return;
+    }
+
+    const descriptionParts = [];
+    if (preferredTutor) {
+      descriptionParts.push(`Preferred tutor: ${preferredTutor}`);
+    }
+    if (notes) {
+      descriptionParts.push(notes);
+    }
+
+    const requestDescription = descriptionParts.length > 0
+      ? descriptionParts.join(" | ")
+      : "No additional notes provided.";
+
+    setMessage("Submitting request...");
+
+    try {
+      const schoolCheckResult = await runSQL(
+        `SELECT schoolID FROM tblSchool WHERE schoolID = ${Number(schoolID)} LIMIT 1;`
+      );
+
+      if (schoolCheckResult.error) {
+        throw new Error(schoolCheckResult.error);
+      }
+
+      if (!schoolCheckResult.data || schoolCheckResult.data.length === 0) {
+        throw new Error("No school was found with that School ID.");
+      }
+
+      const safeDescription = escapeSqlValue(requestDescription);
+
+      const insertSql = `
+        INSERT INTO tblRequest (schoolID, subjectID, requestEduLevel, requestDescription, requestDateCreated)
+        VALUES (${Number(schoolID)}, ${Number(subjectID)}, '${escapeSqlValue(educationLevel)}', '${safeDescription}', CURDATE());
+      `;
+
+      const insertResult = await runSQL(insertSql.trim());
+
+      if (insertResult?.error) {
+        throw new Error(insertResult.error);
+      }
+
+      if (insertResult && insertResult.success === false) {
+        throw new Error("The request could not be saved.");
+      }
+
+      form.reset();
+      if (selectedSchoolId && schoolIdInput) {
+        schoolIdInput.value = selectedSchoolId;
+      }
+
+      setMessage("Request submitted successfully.");
+    } catch (error) {
+      setMessage(`Request could not be submitted: ${error.message}`, true);
+    }
+  });
+});
+</script>
+</body>
+</html>

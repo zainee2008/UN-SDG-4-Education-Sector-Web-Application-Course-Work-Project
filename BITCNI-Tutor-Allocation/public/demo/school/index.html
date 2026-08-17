@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Home Page</title>
+    <link rel="stylesheet" href="../GeneralCSS/Style.css">
+
+    <style>
+        /* Internal CSS for intro section */
+        .welcomeMessage {
+            text-align: center;
+            max-width: auto;
+            margin: 20px auto;
+            background-color: white;
+        }
+
+        .welcomeMessage ul {
+            display: inline-block;
+            text-align: left;
+
+
+        }
+
+        .chart-wrapper {
+            height: 420px;
+
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- banner containing image -->
+    <div class="banner" style="text-align: center;">
+        <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+    </div>
+    <br>
+
+    <div class="nav">
+        <a href="index.html">Home</a>
+        <a href="my_requests.html">Active Tutor Requests</a>
+        <a href="submit_request.html">Request a Tutor</a>
+        <a href="edit_request.html">Modify Tutor Request</a>
+        <a href="my_tutor.html">View School tutors</a>
+        <a class="nav-switch" href="../staff/index.html">Go to Staff Side</a>
+    </div>
+
+    <div class="welcomeMessage">
+        <h1>Tutor Assignment Management — School Portal</h1>
+        <p>Use this portal to manage tutor requests for your School. You can:</p>
+        <ul>
+            <li>View the status of ongoing requests for tutors for your School</li>
+            <li>View records of tutors assigned to your School</li>
+            <li>Create a new request for a tutor to be assigned to your School</li>
+            <li>Edit a pre-existing request for a tutor</li>
+        </ul>
+    </div>
+
+    <hr>
+
+    <!-- Main content of page allowing a user to search for schools by giving a School Name or School ID -->
+    <div class="main">
+
+        <h2>Browse schools recorded on the system</h2>
+        <p>Search for your School below and select it. Your selection will carry through to the other pages,
+            letting you view, submit, and edit tutor requests on behalf of that School.
+            Use the search fields directly below to filter the displayed Schools</p>
+
+
+
+        <!-- Search by School ID form -->
+        <form id="searchByIDForm">
+            <div class="form-row">
+                <label for="schoolID">School ID Number</label>
+                <input type="number" id="schoolID">
+            </div>
+
+            <button type="submit">Search Schools by ID number</button>
+        </form>
+
+        <div id="searchByIDMessage"></div>
+
+        <br>
+
+        <!-- Search by School Name form -->
+        <form id="searchByNameForm">
+            <div class="form-row">
+                <label for="schoolName">School Name</label>
+                <input type="text" id="schoolName">
+            </div>
+
+            <button type="submit">Search Schools by name</button>
+
+        </form>
+
+        <div id="searchByNameMessage"></div>
+
+        <br>
+
+
+
+        <!-- Single row table shall be populated with the currently selected school -->
+        <p id="selectedSchool">
+
+
+        <h2>Select your School from the options below to view and change requests for tutors for the selected School
+        </h2>
+        <p>Click 'Select' next to your School to set it as your active School. Your selection will be remembered as you
+            navigate between pages</p>
+
+        <br>
+
+        <!--Button to reset table back to how it was on page first loading-->
+        <p>Changed your search? Click below to restore the full list of Schools.</p>
+        <button type="button" id="resetTableButton">Reset Table</button>
+
+        <br>
+
+        <!-- Table shall be populated with Schools whose name contains the given string for name, or a School with a matching School ID -->
+        <div id="tableOutput"></div>
+
+        <!-- Visually divide search/select school section from chart section -->
+        <br>
+        <hr>
+        <br>
+
+        <!-- chart section -->
+        <div schoolCharts>
+            <h2>Schools on the System by Council Area</h2>
+            <p>This chart shows how many Schools in each NI council area currently use this system.</p>
+            <div class="chart-wrapper">
+                <canvas id="schoolCountChart"></canvas>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script src="../vendor/sqljs/sql-wasm.js"></script>
+    <script src="../js/browser-db.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+
+        sessionStorage.removeItem("selectedSchool"); // use whatever key your saveSchoolSelection() function uses
+
+        const selectedSchool = getSchoolSelection();
+
+        //ensure that page has loaded before running the code below 
+        document.addEventListener("DOMContentLoaded", async () => {
+            //assign element where table shall be built upon 
+            const tableOutput = document.querySelector("#tableOutput");
+
+            // declare SQL query to get 
+            const sql = "SELECT schoolID, schoolName, schoolPostcode FROM tblSchool;";
+
+            // get the result of running the SQL through the database 
+            const resultAllSchools = await runSQL(sql);
+            //console.log(result); // for testing putposes
+
+            const allSchools = resultAllSchools.data; // contains each entry for Schools returned from SQL query
+            console.log(allSchools); // for testing purposes
+
+            if (!resultAllSchools || allSchools.length === 0) { // if no Schools are returned from the database, show a message to the user, do not build a table
+                tableOutput.textContent = "Error: No Schools found in database"; // show message to user
+                return; // exit script 
+            }
+
+            // initialize schoolsToDisplay to allSchools, shall be changed after search terms are entered
+            let schoolsToDisplay = allSchools;
+
+            // set up variables to allow table to function like a paginated table, showing only a certain number of Schools per page, and allowing the user to navigate through the pages of results
+            const maxSchoolsPerPage = 20; // maximum number of schools to show per page in table 
+            let currentPage = 0; // used to track current page of table being viewed 
+
+
+            const searchByIDMessage = document.querySelector("#searchByIDMessage");
+            const searchByNameMessage = document.querySelector("#searchByNameMessage");
+
+
+            // create function to create table for current page being viewed 
+            function populateTablePage(pageToPopulate) {
+                tableOutput.innerHTML = ""; // clear current rows in table 
+
+                let totalPages = Math.ceil(schoolsToDisplay.length / maxSchoolsPerPage); // get total number of pages in table, ceiling needed to include pages with less than 20 schools 
+
+                if (schoolsToDisplay.length === 0) { // if no schools to display, show message to user, do not build table 
+                    tableOutput.textContent = "No Schools match the search criteria"; // show message to user
+                    return; // exit script 
+                }
+
+                //get indexes of first and last schools to be displayed on current page
+                let firstSchoolIndex = pageToPopulate * maxSchoolsPerPage;
+                let lastSchoolIndex = firstSchoolIndex + maxSchoolsPerPage; // gets index position 20 places after first school
+                let currentPageSchools = schoolsToDisplay.slice(firstSchoolIndex, lastSchoolIndex); // get range of schools to be displayed on page
+
+
+                // begin construction of of table containing rows of schools // 
+
+                // create table and header row elements, append header to table 
+                const schoolsTable = document.createElement("table"); // create table element
+                const schoolsTableHeaderRow = document.createElement("tr"); // create header row element
+                schoolsTable.appendChild(schoolsTableHeaderRow); // place header row into table
+
+                // create and populate header cells with header text 
+
+                // School ID column 
+                const schoolIDHeader = document.createElement("th");
+                schoolIDHeader.textContent = "School ID Number";
+                schoolsTableHeaderRow.appendChild(schoolIDHeader);
+
+                // School Name column
+                const schoolNameHeader = document.createElement("th");
+                schoolNameHeader.textContent = "School Name";
+                schoolsTableHeaderRow.appendChild(schoolNameHeader);
+
+                // School Postcode column
+                const schoolPostcodeHeader = document.createElement("th");
+                schoolPostcodeHeader.textContent = "School Postcode";
+                schoolsTableHeaderRow.appendChild(schoolPostcodeHeader);
+
+                // Select School column
+                const selectHeader = document.createElement("th");
+                selectHeader.textContent = "Select";
+                schoolsTableHeaderRow.appendChild(selectHeader);
+
+                // populate table rows with schools currently contain in schoolsToDisplay 
+                for (let school of currentPageSchools) { // loop through each School currently in currentPageSchools 
+
+                    // create a new row for the current School
+                    const schoolRow = document.createElement("tr");
+
+                    // create and populate cells with current schools details and select button 
+
+                    // create/populate School ID cell
+                    const schoolIDCell = document.createElement("td");
+                    schoolIDCell.textContent = school.schoolID;
+                    schoolRow.appendChild(schoolIDCell);
+
+                    // create/populate School Name cell
+                    const schoolNameCell = document.createElement("td");
+                    schoolNameCell.textContent = school.schoolName;
+                    schoolRow.appendChild(schoolNameCell);
+
+                    // create/populate School Postcode cell
+                    const schoolPostcodeCell = document.createElement("td");
+                    schoolPostcodeCell.textContent = school.schoolPostcode;
+                    schoolRow.appendChild(schoolPostcodeCell);
+
+                    //create final cell in table to contain buttons 
+                    const selectSchoolCell = document.createElement("td");
+
+                    const viewRequestsButton = document.createElement("button"); //create buton  
+                    viewRequestsButton.textContent = "View Requests"; // set button text
+
+                    // add event listener to act when view requests button is pressed for a school 
+                    viewRequestsButton.addEventListener("click", () => {
+
+                        // pass selected school to function that saves the school selection to sessionStorage
+                        saveSchoolSelection(school);
+
+                        // bring user to page my_request.html 
+                        window.location.href = `my_requests.html?schoolID=${school.schoolID}`;
+
+                    });
+
+
+                    const viewTutorsButton = document.createElement("button"); //create View Tutors Button 
+                    viewTutorsButton.textContent = "View Tutors"; // set button text
+
+                    // add event listener to act when view tutors button is pressed for a school
+                    viewTutorsButton.addEventListener("click", () => {
+
+                        // save school selection 
+                        saveSchoolSelection(school);
+
+                        // bring user to page my_tutor.html
+                        window.location.href = `my_tutor.html?schoolID=${school.schoolID}`;
+
+                    });
+
+                    // append buttons to cell, and cell to row 
+                    selectSchoolCell.appendChild(viewRequestsButton);
+                    selectSchoolCell.appendChild(viewTutorsButton);
+                    schoolRow.appendChild(selectSchoolCell);
+
+                    // append the populated row to the table
+                    schoolsTable.appendChild(schoolRow);
+
+                } // end of for loop
+
+                // append the populated table to tableOutput 
+                tableOutput.appendChild(schoolsTable);
+
+
+
+
+
+
+                // create and append controls to navigate through pages of table
+
+                // div to contain page controls
+                const pageControls = document.createElement("div");
+
+                // create previous page button
+                const previousPageButton = document.createElement("button");
+                previousPageButton.textContent = "Previous"; // set button text
+
+                if (currentPage === 0) { // only runs if current page is equal to 0
+                    previousPageButton.disabled = true; // disable previous page button if on first page of table
+                };
+
+                previousPageButton.addEventListener("click", () => { // add event listener to button, when clicked, run below 
+                    currentPage--; // decrease current page by 1
+                    populateTablePage(currentPage); // repopulate table with previous page of schools
+                });
+
+                // create next page button
+                const nextPageButton = document.createElement("button");
+                nextPageButton.textContent = "Next"; // set button text
+
+                if (currentPage === totalPages - 1) { // only runs if current page is equal to last page of table
+                    nextPageButton.disabled = true; // disable next page button if on last page of table
+                };
+
+                nextPageButton.addEventListener("click", () => { // add event listener to button, when clicked, run below
+                    currentPage++; // increase current page by 1
+                    populateTablePage(currentPage); // repopulate table with next page of schools
+                });
+
+                const pageNumbers = document.createElement("span"); // create element to show current page number and total pages
+                pageNumbers.textContent = `Page ${currentPage + 1} of ${totalPages}`; // when listiing current page, need to add 1 to current page 
+
+                pageControls.appendChild(previousPageButton); // append previous page button to page controls 
+                pageControls.appendChild(nextPageButton); // append next page button to page controls
+                pageControls.appendChild(pageNumbers); // append page numbers to page controls
+
+                // append page controls to table containing rows of schools
+                tableOutput.appendChild(pageControls); // append page controls to page output  
+
+            }
+
+            // function that allows for filtering of schools based on searched IDs or Names 
+            document.querySelector("#searchByIDForm").addEventListener("submit", async (event) => {
+                event.preventDefault(); // prevent page from reloading when form is submitted
+
+                const searchedID = document.querySelector("#schoolID").value; // get the ID number entered in search by ID field 
+
+
+                if (searchedID.trim() === "") { // if the user attempts to search by ID with no input, return all schools 
+                    sresetFeedbackMessages();
+                    searchByIDMessage.classList.add("errorMessage"); // set styling to errorMessage 
+                    searchByIDMessage.textContent = "Error: Please enter a valid School ID Number";
+
+                    return; // exit script 
+                }
+
+                if (isNaN(searchedID)) { // if the value entered is not a number, show message to user, do not filter schools
+                    resetFeedbackMessages();
+                    searchByIDMessage.classList.add("errorMessage"); // set styling to errorMessage 
+                    searchByIDMessage.textContent = "Error: Please enter a valid whole number for the School ID number"; // show message to user
+                    return; // exit script 
+                }
+
+                searchedIDSql = `SELECT schoolID, schoolName, schoolPostcode FROM tblSchool WHERE schoolID = ${searchedID};`; // SQL query to get school with matching ID
+                const resultSearchedID = await runSQL(searchedIDSql); // store result of running SQL query through database
+
+                if (!resultSearchedID || !resultSearchedID.data || resultSearchedID.data.length === 0) { // if result of sql query to DB returns no schools, show message to user 
+                    resetFeedbackMessages();
+                    searchByIDMessage.classList.add("errorMessage"); // set styling to errorMessage 
+                    searchByIDMessage.textContent = `Error: No Schools found matching the School ID "${searchedID}"`;
+                    return;
+                }
+
+                // if this point has been reached, searchedID is valid 
+                resetFeedbackMessages();
+                searchByIDMessage.classList.add("feedbackMessage");
+                searchByIDMessage.textContent = "Your search terms have been applied to the table below.";
+
+
+                schoolsToDisplay = resultSearchedID.data; // update schoolsToDisplay to schools with matching ID number
+                currentPage = 0; // reset current page to 0 
+
+                populateTablePage(currentPage); // repopulate table with schools matching searched ID number
+
+            }); // end of search by ID form event listener
+
+
+
+            // function that allows for filtering of schools based on searched Names
+            document.querySelector("#searchByNameForm").addEventListener("submit", async (event) => {
+                event.preventDefault(); // prevent page from reloading when form is submitted
+
+                const searchedName = document.querySelector("#schoolName").value; // get the name entered in search by name field 
+
+                if (searchedName.trim() === "") { // if the value entered is empty or only contains spaces, show message to user, do not filter schools
+                    resetFeedbackMessages();
+                    searchByNameMessage.classList.add("errorMessage"); // set styling to errorMessage 
+                    searchByNameMessage.textContent = "Error: Please enter a valid School Name";
+                    return; // exit script 
+                }
+
+                const searchedNameSql = `SELECT schoolID, schoolName, schoolPostcode FROM tblSchool WHERE schoolName LIKE '%${searchedName}%';`; // SQL query to get schools with names containing the searched name
+                const resultSearchedName = await runSQL(searchedNameSql); // store result of running SQL query through database
+
+                if (!resultSearchedName || !resultSearchedName.data || resultSearchedName.data.length === 0) { // if result of sql query to DB returns no schools, show message to user 
+                    resetFeedbackMessages();
+                    searchByNameMessage.classList.add("errorMessage"); // set styling to errorMessage 
+                    searchByNameMessage.textContent = `Error: No Schools found matching the name "${searchedName}".`;
+                    return;
+                }
+
+                // if this point has been reached, searchedName is valid 
+                resetFeedbackMessages();
+                searchByNameMessage.classList.add("feedbackMessage"); // add to feedbackMessage Class 
+                searchByNameMessage.textContent = "Your search terms have been applied to the table below."; // display feedback message 
+
+                schoolsToDisplay = resultSearchedName.data; // update schoolsToDisplay to schools with matching/similar names
+                currentPage = 0; // reset current page to 0 
+
+                populateTablePage(currentPage); // repopulate table with schools matching searched name
+
+            }); // end of search by name form event listener
+
+            //function for Reset Table Button 
+            document.querySelector("#resetTableButton").addEventListener("click", () => {
+
+                //set schools to display back to the result of sql query getting all schools 
+                schoolsToDisplay = allSchools;
+
+                resetFeedbackMessages();
+
+                //reset currentPage back to 0 
+                currentPage = 0;
+
+                //repopulate table containing schools 
+                populateTablePage(currentPage);
+            });
+
+            //function to clear feedback messages 
+            resetFeedbackMessages = () => {
+
+                //clear error/feedback messages 
+                searchByIDMessage.textContent = "";
+                searchByNameMessage.textContent = "";
+
+                //clear classes from search messages to reset internal CSS styling 
+                searchByIDMessage.classList.remove("errorMessage", "feedbackMessage");
+                searchByNameMessage.classList.remove("errorMessage", "feedbackMessage");
+
+                //clear any text in search input fields in search forms 
+                document.querySelector("#schoolID").value = "";
+                document.querySelector("#schoolName").value = "";
+
+            };
+
+
+            // populate the first page of the table when page loads
+            populateTablePage(currentPage);
+
+            // if school has been previously selected and not cleared, will return other than null; 
+            sessionStorage.removeItem("selectedSchool"); // use whatever key your saveSchoolSelection() function uses
+
+            const selectedSchool = getSchoolSelection();
+
+
+            ///////////// Code for getting data for bar chart and presenting bar chart ///////////////////////
+
+            // Contruct sql query to get a count of the number of schools included in the database per region,
+            // Will need to join tblRegion -> tblDeprivation -> tblSchool 
+
+            // need to get for each region, a count of the number of schools in that region 
+            // tblRegion gets abbreviated to 'reg', tblDeprivation gets abbrivated to 'dep', tblSchool get abbreviated to 'sch' 
+
+            const schoolCountSql = `
+                SELECT 
+                    reg.regionName,
+                    COUNT(sch.schoolID) AS numberOfSchools
+
+                FROM tblRegion reg
+                JOIN tblDeprivation dep ON reg.regionCode = dep.regionCode
+                JOIN tblSchool sch ON dep.SOACode = sch.SOAcode
+
+                GROUP BY reg.regionName
+                ORDER BY reg.regionName;
+            `;
+
+            // store results of running schoolCountSql in variable 
+            const resultSchoolCount = await runSQL(cleanSQL(schoolCountSql))
+            console.log(resultSchoolCount);
+            // Extract and create new arrays containing only the labels and counts of schools from resultSchoolCount 
+
+            //create new array 'labels', then for each row in resultsSchoolCount add the regionName of that row to labesls
+            const labels = resultSchoolCount.data.map(row => row.regionName);
+            //console.log(labels); 
+
+            const data = resultSchoolCount.data.map(row => row.numberOfSchools);
+            //console.log(data); 
+
+            const ctx = document.querySelector("#schoolCountChart");
+
+            // create bar chart 
+            new Chart(ctx, {
+                type: "bar",
+                data: {
+                    // Labels appear along the x-axis.
+                    labels: labels,
+                    datasets: [{
+                        label: "Number of Schools which make use of this for the labbelled NI council area",
+                        data: data,
+                        backgroundColor: ["#d62828", "#f77f00", "#003049"],
+                        borderRadius: 50
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 10
+                            }
+                        }
+                    }
+                }
+            });
+
+
+
+        });
+
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,372 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif; 
+}
+
+body {
+  background-color: #fffbf0;
+  font-family: Arial, sans-serif;
+  color: #1a1a1a;
+}
+
+.page {
+  width: 960px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+}
+
+img {
+  width: 50%;
+  height: auto;
+  display: flex;
+}
+
+.banner {
+  position: relative;
+  padding: 1% 0;   
+  background-color: #F1E9D2;
+  margin-top: 0;
+  overflow: hidden;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 1%;
+  padding-top: 1%;
+}
+
+.banner img {
+  position: relative;
+  z-index: 1;
+  width: 30%;
+  border-radius: 10px;
+}
+
+.banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("../Images/lanyon 1600 x 575 .jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.50;
+  z-index: 0;
+}
+
+.nav {
+
+  background-color: #cc0000;
+  text-align: center;
+  color: #ffffff;
+  padding: 15px 0;
+  font-weight: bold;
+  margin-top: -20px;
+}
+
+
+.banner h1 {
+  margin: 15px 0 5px 0;
+  color: #ffffff;
+}
+
+.banner p {
+  margin: 0;
+  color: #ffffff;
+}
+
+.nav a {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0 10px;
+}
+
+.nav a:hover {
+  text-decoration: underline;
+}
+
+.nav-switch {
+  display: inline-block;
+  margin-left: 14px;
+  padding: 8px 14px;
+  border: 2px solid #ffffff;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: #cc0000 !important;
+  font-weight: bold;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.main {
+  padding: 20px;
+  line-height: 1.5;
+}
+
+p {
+  font: bold 20px Arial, sans-serif;
+  color: black;
+}
+
+h1 {
+  font: bold 40px Arial, sans-serif;
+  color: #7a0000;
+}
+h2 {
+  font: bold 30px Arial, sans-serif;
+  color: #7a0000;
+}
+
+h3 {
+  font: bold 25px Arial, sans-serif;
+  color: #7a0000;
+}
+
+input,
+select,
+textarea {
+  padding: 8px;
+  margin: auto;
+  border: 1px solid black;
+  border-radius: 10px;
+}
+
+ul {
+  padding-left: 15px;
+}
+
+#creatTutor {
+  border-radius: 10px;
+  background-color: #cc0000;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+
+}
+
+button {
+  border-radius: 10px;
+  background-color: #cc0000;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+table {
+  width: 90%;
+  background-color: white;
+  text-align: center;
+  color: black;
+  font-weight: bold;
+  margin: 20px auto;
+
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid black;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+form {
+  margin-top: 20px;
+  font: bold 20px Arial, sans-serif;
+}
+
+#filterRequestsForm {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  width: auto;
+  margin: 0;
+  width: 100%;
+}
+
+th {
+  font: bold Arial, sans-serif;
+  border: 1px black solid;
+  background-color: #cc0000;
+  color: white;
+  padding: 8px 10px;
+}
+
+td {
+  border: 1px black solid;
+}
+
+.form-row {
+  margin-bottom: 12px;
+}
+
+
+td {
+  padding: 0px 20px;
+}
+
+.errorMessage {
+  text-align: center;
+  color: darkred;
+  background-color: lightcoral;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.feedbackMessage {
+  text-align: center;
+  color: darkgreen;
+  background-color: lightgreen;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+
+button:disabled {
+  color: grey;
+  background-color: lightgray;
+  cursor: not-allowed;
+}
+
+input[readonly] {
+  background-color: grey;
+  cursor: not-allowed;
+}
+
+form {
+  width: 40%;
+  margin: 20px auto;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 10px;
+  padding: 30px;
+}
+
+.form-row {
+  margin-bottom: 20px;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font: bold 18px Arial, sans-serif;
+  color: #7a0000;
+}
+
+.form-row input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid black;
+  border-radius: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+#ChartSection {
+  width: 80%;
+  margin: 30px auto;
+}
+
+.chart-wrapper {
+  width: 70%;
+  max-width: 700px;
+  height: 350px;
+  margin: 0 auto;
+}
+
+#tutorEDULevelChart {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/*--------------To make the crud slection neat in the tutors table------------------*/
+#tutorCrudSelection, #tutorCreateSection {
+  width: 50%;
+  margin: 30px auto;
+  padding: 25px;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+#tutorCrudSelection h3, #tutorCreateSection h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #7a0000;
+}
+
+#tutorCrudSelection label, #tutorCreateSection label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #7a0000;
+}
+
+#tutorCrudSelection input,
+#tutorCrudSelection select,
+#tutorCreateSection input,
+#tutorCreateSection select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid black;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+#tutorCrudSelection button, #tutorCreateSection button {
+  margin-top: 15px;
+  margin-right: 8px;
+}
+
+/* Public portfolio demo notice */
+.demo-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: #fff4cc;
+  border-bottom: 1px solid #d6b84b;
+  color: #3f3300;
+  font: 600 14px/1.4 Arial, sans-serif;
+  text-align: center;
+}
+
+.demo-mode-banner button {
+  padding: 7px 12px;
+  border: 1px solid #7a0000;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #7a0000;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.demo-mode-banner button:hover,
+.demo-mode-banner button:focus-visible {
+  background: #7a0000;
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .demo-mode-banner {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+}

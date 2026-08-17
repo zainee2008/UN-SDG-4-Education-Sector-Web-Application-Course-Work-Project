@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Requests</title>
+    <link rel="stylesheet" href="../GeneralCSS/Style.css">
+</head>
+
+<body>
+    <!-- ========== NAVBAR (shared component - copy from index.html) ========== -->
+    <div class="banner">
+        <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+        <h1></h1>
+        <p></p>
+    </div>
+    <br>
+
+    <div class="nav">
+        <a href="index.html">Home</a>
+        <a href="my_requests.html">Active Tutor Requests</a>
+        <a href="submit_request.html">Request a Tutor</a>
+        <a href="edit_request.html">Modify Tutor Request</a>
+        <a href="my_tutor.html">View School Tutors</a>
+        <a class="nav-switch" href="../staff/index.html">Go to Staff Side</a>
+    </div>
+
+    <br>
+
+    <!-- Main Section -->
+    <div class="main">
+        <h2>My Requests</h2>
+        <p>
+            This page shows all your requests. Use the filter section below
+            to search for a specific request by ID, School ID, Subject ID, Request Description, Date or Education level.
+        </p>
+        <br>
+        <h3>Your Selected School</h3>
+        <div id="displaySelectedRequest">
+            <table class="table">
+                <tr>
+                    <th>School ID</th>
+                    <th>School Name</th>
+                    <th>School Postcode</th>
+                </tr>
+                <tr>
+                    <td id="schID"></td>
+                    <td id="nameID"></td>
+                    <td id="pstCode"></td>
+                </tr>
+            </table>
+        </div>
+        <br>
+        <h3>Filter Your Requests</h3>
+        <br>
+        <form id="filterRequestsForm">
+
+            <!-- normal search box -->
+            <div style="display: flex; width: 100%; gap: 10px;">
+
+
+                <div style="flex: 1;">
+                    <input type="text" id="searchInput" name="searchInput" placeholder="Enter search term..."
+                        style="width: 100%; box-sizing: border-box;">
+
+                    <input type="date" id="enterDate" name="startDate"
+                        style="width: 100%; box-sizing: border-box; display: none;">
+
+                    <select id="eduLevelInput" name="eduLevelInput" style="width:100%; display: none;">
+                        <option value="">-- Select Status --</option>
+                        <option value="Primary">Primary</option>
+                        <option value="Secondary">Secondary</option>
+                        <option value="Tertiary">Tertiary</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+
+                <select id="searchBy" name="searchBy" onchange="toggleStatusField()" style="width: 180px;">
+                    <option value="">-- Select Filter --</option>
+                    <option value="requestID">Request ID</option>
+                    <option value="schoolID">School ID</option>
+                    <option value="subjectID">Subject ID</option>
+                    <option value="requestDescription">Request Description</option>
+                    <option value="requestDateCreated">Request Date Created</option>
+                    <option value="requestEduLevel">Education Level</option>
+                </select>
+
+                <!-- date range fields -->
+
+            </div>
+
+            <button type="submit" class="button">Search</button>
+
+        </form>
+
+
+        <br>
+        <h3>Your School's Request List</h3>
+        <br>
+        <div id="divID"></div>
+    </div>
+    <script src="../vendor/sqljs/sql-wasm.js"></script>
+    <script src="../js/browser-db.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+
+        //this code is for the search form, it will build the sql query based on the selected filter and input value, then it will print the result in the table below
+        const params = new URLSearchParams(window.location.search);
+        const selectedSchoolID = Number(params.get("schoolID"));
+        console.log("schoolID from URL =", selectedSchoolID);
+
+        //display the slected school request----------------------------------------------------------------------------------------------------------------------------------------
+        const getSchoolDetails = async (schoolID) => {
+            const sql = `
+            SELECT schoolID, schoolName, schoolPostcode
+            FROM tblSchool
+            where schoolID = ${schoolID};
+            `;
+
+            const result = await runSQL(sql);
+
+            if (!result || !result.data || result.data.length === 0) {
+                return null;
+            }
+            return result.data[0];
+
+        };
+
+
+        async function displayRequest() {
+
+            const school = getSchoolSelection();
+
+            if (!school) {
+                document.getElementById("displaySelectedRequest").innerHTML =
+                    "<p class='errorMessage'>No School Found</p>"; return;
+            }
+
+            document.getElementById("schID").textContent = school.schoolID;
+            document.getElementById("nameID").textContent = school.schoolName;
+            document.getElementById("pstCode").textContent = school.schoolPostcode;
+
+        }
+
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            function loadRequests() {
+                const searchBy = document.getElementById("searchBy").value;
+                const searchInput = document.getElementById("searchInput").value.trim();
+                const enterDate = document.getElementById("enterDate").value;
+                const eduLevelInput = document.getElementById("eduLevelInput").value;
+                let sql = `SELECT * FROM tblRequest WHERE schoolID =${selectedSchoolID}`;
+
+                if (searchBy === "requestDateCreated" && enterDate !== "") {
+                    sql += ` AND ${searchBy} = '${enterDate}'`;
+                }
+                else if (searchBy === "requestEduLevel" && eduLevelInput !== "") {
+                    sql += ` AND requestEduLevel = '${eduLevelInput}'`;
+                }
+                else if (searchBy !== "" && searchInput !== "") {
+                    if (searchBy === "requestID" || searchBy === "schoolID" || searchBy === "subjectID") {
+                        sql += ` AND ${searchBy} = ${searchInput}`;
+                    }
+                    else {
+                        sql += ` AND ${searchBy} LIKE '%${searchInput}%'`;
+                    }
+                }
+                sql += " ORDER BY requestID ASC;";
+                printTablePages(sql, 5, true, "#divID")
+            }
+
+            displayRequest();
+
+            loadRequests();
+
+            document.getElementById("filterRequestsForm").addEventListener("submit", function (e) {
+                e.preventDefault();
+                loadRequests();
+            });
+
+            document.getElementById("divID").addEventListener("click", function (event) {
+                const clickedRow = event.target.closest("tr");
+                const requestToEdit = {
+                    requestID: Number(clickedRow.cells[0].textContent.trim()),
+                    requestSubject: clickedRow.cells[1].textContent.trim(),
+                    requestEduLevel: clickedRow.cells[2].textContent.trim(),
+                    requestDescription: clickedRow.cells[3].textContent.trim(),
+                    requestOpenDate: clickedRow.cells[4].textContent.trim(),
+                };
+                console.log("saving request object:", requestToEdit);
+
+                saveEditRequestSelection(requestToEdit);
+
+                console.log("saved value:", sessionStorage.getItem("selectedRequest"));
+                window.location.href = "edit_request.html";
+
+            });
+        });
+
+
+
+
+
+
+
+
+        //this function will toggle the search status dropdown and dates based on the selected filter
+        function toggleStatusField() {
+            const searchBy = document.getElementById("searchBy").value;
+            const searchInput = document.getElementById("searchInput");
+            const eduLevelInput = document.getElementById("eduLevelInput");
+            const enterDate = document.getElementById("enterDate");
+
+            if (searchBy === "requestEduLevel") {
+                searchInput.style.display = "none";
+                eduLevelInput.style.display = "block";
+                enterDate.style.display = "none";
+            } else if (searchBy === "requestDateCreated") {
+                searchInput.style.display = "none";
+                eduLevelInput.style.display = "none";
+                enterDate.style.display = "block";
+            } else {
+                searchInput.style.display = "block";
+                eduLevelInput.style.display = "none";
+                enterDate.style.display = "none";
+            }
+        }
+
+
+    </script>
+
+</body>
+
+</html>

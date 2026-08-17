@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schools Page</title>
+  <link rel="stylesheet" href="../GeneralCSS/Style.css">
+  <style>
+    table {
+      border-radius: 0px;
+    }
+
+    th {
+      background-color: lightgray;
+      color: black;
+    }
+
+    td {
+      padding: 0px 3px;
+    }
+
+    h1,
+    h2,
+    h3,
+    #tablebox p {
+      /*A grouped selector has comma seperator but space is used to reference elements within elements*/
+      text-align: center;
+    }
+
+    #searchOptions {
+      margin: auto;
+      width: 80%;
+    }
+
+    #optionsDiv {
+      width: fit-content;
+      margin: 10px auto;
+      padding: 10px;
+      border: black solid 2px;
+      border-radius: 10px;
+      background-color: lightgray;
+    }
+
+    dt {
+      font-weight: bold;
+    }
+
+    dl {
+      border: black solid 2px;
+      background-color: white;
+      width: fit-content;
+      margin: 0% auto;
+      padding: 2%;
+      margin-left: auto;
+      border-radius: 20px;
+    }
+
+    #feedbackElement,
+    #formFeedback {
+      text-align: center;
+      font-weight: bold;
+
+    }
+
+    .activeButton {
+      background-color: rgb(181, 85, 2);
+    }
+
+    #formatOptionsDiv, #reportSelection {
+      width: 92%;
+      margin: 0 auto;
+      display: flex;
+    }
+
+    #formatOptionsDiv button {
+      margin: 0 1%;
+    }
+
+    .nav {
+      margin-top: 0;
+    }
+
+    #welcomeSection {
+      margin: 0 auto;
+      width: 80%;
+    }
+
+    #pageNavDiv {
+      width: 90%;
+      margin: 10px auto;
+    }
+
+    table button {
+      width: fit-content;
+      height: fit-content;
+    }
+
+    #chartDiv {
+      width: 80%;
+      height: 400px;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ========== NAVBAR (shared component - copy from index.html) ========== -->
+  <div class="banner" style="text-align: center;">
+    <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+    <h1></h1>
+    <p></p>
+  </div>
+  <div class="nav">
+    <a href="index.html">Home</a>
+    <a href="schools.html">Schools</a>
+    <a href="tutors.html">Tutors</a>
+    <a href="requests.html">Requests</a>
+    <a href="assignments.html">Assignments</a>
+    <a class="nav-switch" href="../school/index.html">Go To School Side</a>
+  </div>
+  <!-- ========== PAGE BANNER / HERO (optional, page-specific) ========== -->
+  <!--To be completed by Ahmad Al Kurdiya-->
+  <br>
+  <div id="welcomeSection">
+    <h1>Welcome to the Schools Page</h1>
+    <br>
+    <br>
+    <p>This page allows you to view all the schools that have unfullfilled requests
+      and you may provide search queries or set filters to narrow down your options
+      as a staff member so that you may better decide on where you want to work.
+    </p>
+    <br>
+    <p>If you happen to select a filter and would like to remove it then submit an empty Filter Options form.</p>
+  </div>
+  <br>
+  <hr>
+  <br>
+
+  <!-- ========== MAIN CONTENT GOES HERE ========== -->
+  <main>
+    <br>
+    <br>
+
+    </div>
+
+
+
+
+    <!--View Schools-->
+    <div id="schoolsTable"></div>
+    <div id="crudOptions"></div>
+    <br>
+    <br>
+    <hr>
+    <h3>Business Reports</h3>
+    <br>
+    <br>
+    <div id="businessReportDiv"></div>
+
+
+
+  </main>
+
+  <!-- ========== FOOTER (shared component - copy from index.html) ========== -->
+
+  <!-- Page-specific JS at the bottom -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="../vendor/sqljs/sql-wasm.js"></script>
+  <script src="../js/browser-db.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      await setTableSchema("tblSchool", {
+        'schoolID': { type: dataType.int, required: false, allowUpdate: false, allowCreation: false, maxLength: 11 },
+        'schoolName': { type: dataType.string, required: true, allowUpdate: true, allowCreation: true, maxLength: 100 },
+        'schoolEmail': { type: dataType.email, required: false, allowUpdate: true, allowCreation: true, maxLength: 100 },
+        'schoolTelephone': { type: dataType.telephone, required: false, allowUpdate: true, allowCreation: true, maxLength: 50 },
+        'schoolPostcode': { type: dataType.string, required: true, allowUpdate: true, allowCreation: true, maxLength: 10 },
+        'SOAcode': { type: dataType.string, required: true, allowUpdate: true, allowCreation: true, maxLength: 8, dependsOn: "tblDeprivation.SOACode" },
+      });
+
+      let sqlQueryWhere = ";";
+      let sqlSelect = "SELECT sch.schoolID AS 'ID',sch.schoolName AS 'School Name', sch.schoolPostcode AS 'Postcode',sch.SOAcode AS 'SOA Code',sch.schoolEmail AS 'Email', sch.schoolTelephone AS 'Phone Number', reg.regionName AS 'Region' FROM tblSchool sch LEFT JOIN tblDeprivation dep ON dep.SOACode = sch.SOAcode LEFT JOIN tblRegion reg ON reg.regionCode = dep.regionCode";
+      sqlQuery = sqlSelect + sqlQueryWhere;
+      printTablePages(sqlQuery, 10, true, "#schoolsTable");
+
+
+      const reportSelection = document.createElement("div");
+      reportSelection.id = "reportSelection";
+      const reportDisplayDiv = document.createElement("div");
+      reportDisplayDiv.id = "reportDisplayDiv";
+      const mostUnfulfilledRequestsButton = document.createElement("button");
+      mostUnfulfilledRequestsButton.textContent = "Schools with Most Unfulfilled Requests"
+      const leastActiveRequestTutorsButton = document.createElement("button");
+      leastActiveRequestTutorsButton.textContent = "Available tutors with least active Requests"
+      const mostDeprivedSchoolsButton = document.createElement("button");
+      mostDeprivedSchoolsButton.textContent = "Number of Most deprived Schools per region";
+
+      mostUnfulfilledRequestsButton.addEventListener("click", () => {
+        reportDisplayDiv.innerHTML = "";
+        const header = document.createElement("h3");
+        header.textContent = "Schools with Most Unfulfilled Requests";
+        reportDisplayDiv.appendChild(header);
+        reportDisplayDiv.appendChild(document.createElement("br"));
+        const tableDiv = document.createElement("div");
+        tableDiv.id = "tableDiv";
+        reportDisplayDiv.appendChild(tableDiv);
+        printTablePages("SELECT sch.schoolID,sch.schoolName,reg.regionName,dep.deprivationRank, COUNT(DISTINCT req.requestID) AS numberOfRequests, COUNT(DISTINCT asg.AssignmentID) AS assignedRequests, COUNT(DISTINCT req.requestID) - COUNT(DISTINCT asg.AssignmentID) AS unfullfilledRequests FROM tblSchool sch LEFT JOIN tblRequest req ON sch.schoolID = req.schoolID LEFT JOIN tblAssignment asg ON req.requestID = asg.requestID LEFT JOIN tblDeprivation dep ON sch.SOAcode = dep.SOACode LEFT JOIN tblRegion reg ON dep.regionCode = reg.regionCode GROUP BY sch.schoolID, sch.schoolName, dep.deprivationRank, reg.regionName ORDER BY unfullfilledRequests DESC;", 10, false, "#tableDiv");
+
+      })
+      leastActiveRequestTutorsButton.addEventListener("click", () => {
+        reportDisplayDiv.innerHTML = "";
+        const header = document.createElement("h3");
+        header.textContent = "Available tutors with least number of active Requests";
+        reportDisplayDiv.appendChild(header);
+        reportDisplayDiv.appendChild(document.createElement("br"));
+        const tableDiv = document.createElement("div");
+        tableDiv.id = "tableDiv";
+        reportDisplayDiv.appendChild(tableDiv);
+        printTablePages("SELECT tu.tutorId,CONCAT(tu.tutorFName,' ',tu.tutorLName) AS tutorName,tu.tutorEduLevel, COUNT(req.requestID) AS numberOfActiveRequests FROM tblTutor tu LEFT JOIN tblAssignment asg ON asg.tutorID = tu.tutorId AND  asg.assignmentDateClosed IS NULL LEFT JOIN tblRequest req ON asg.requestID = req.requestID WHERE tu.tutorStatus = 'Available' GROUP BY tu.tutorId,tutorName,tu.tutorEduLevel ORDER BY COUNT(req.requestID) ASC,tu.tutorEduLevel;", 10, false, "#tableDiv");
+      })
+      mostDeprivedSchoolsButton.addEventListener("click", async () => {
+        reportDisplayDiv.innerHTML = "";
+        const header = document.createElement("h3");
+        header.textContent = "Number of Most deprived Schools per region";
+        reportDisplayDiv.appendChild(header);
+        reportDisplayDiv.appendChild(document.createElement("br"));
+        const chartDiv = document.createElement("div");
+        chartDiv.id = "chartDiv";
+        reportDisplayDiv.appendChild(chartDiv);
+        const canvas = document.createElement("canvas");
+        canvas.id = "reportChart";
+        chartDiv.appendChild(canvas)
+        const ctx = document.querySelector('#reportChart').getContext('2d');
+        const result = await runSQL("SELECT reg.regionName,COUNT(sch.schoolID) AS deprivedSchools FROM tblRegion reg LEFT JOIN tblDeprivation dep ON reg.regionCode = dep.regionCode AND dep.deprivationRank < 179 LEFT JOIN tblSchool sch ON dep.SOACode = sch.SOAcode GROUP BY reg.regionName ORDER BY reg.regionName ASC;");
+        console.log("chart result")
+        console.log(result);
+        if (result !== undefined && result.data.length > 0) {
+          let label = [];
+          let data = [];
+          for (row of result.data) {
+            label.push(row.regionName);
+            data.push(row.deprivedSchools);
+          }
+          console.log("labels");
+          console.log(label);
+          console.log("data");
+          console.log(data);
+
+          const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: label,
+              datasets: [{
+                label: 'Number of Most Deprived Schools',
+                data: data,
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0,
+                    stepSize: 1
+                  }
+                }
+              }
+            }
+          });
+        }
+
+
+      })
+      const businessReportDiv = document.querySelector("#businessReportDiv");
+      reportSelection.appendChild(mostUnfulfilledRequestsButton);
+      reportSelection.appendChild(leastActiveRequestTutorsButton);
+      reportSelection.appendChild(mostDeprivedSchoolsButton);
+      businessReportDiv.appendChild(reportSelection);
+      businessReportDiv.appendChild(reportDisplayDiv);
+
+
+
+
+      document.addEventListener("click", () => {
+        const selectedRow = getSelectedRow();
+        if (selectedRow !== undefined) {
+          console.log("your selected row.");
+          console.log(selectedRow);
+          //console.log({'ID': selectedRow['ID']});
+          printCrudOptions(selectedRow, {
+            'ID': 'schoolID',
+            'School Name': 'schoolName',
+            'Postcode': 'schoolPostcode',
+            'SOA Code': 'SOAcode',
+            'Email': 'schoolEmail',
+            'Phone Number': 'schoolTelephone'
+          },
+            "tblSchool", "School", true, true, true, "#crudOptions");
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

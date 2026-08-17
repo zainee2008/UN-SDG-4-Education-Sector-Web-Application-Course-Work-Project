@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Assigned Tutors</title>
+    <link rel="stylesheet" href="../GeneralCSS/Style.css">
+    <style>
+        table {
+            border-radius: 0px;
+        }
+
+        th {
+            background-color: lightgray;
+            color: black;
+        }
+
+        td {
+            padding: 0px 3px;
+        }
+
+        #tablebox {
+            outline: 2px black solid;
+            background-color: rgba(255, 230, 0, 0.342);
+            width: max-content;
+            padding: 10px 0px;
+            border-radius: 20px;
+            margin: auto;
+        }
+
+        h1,
+        h2,
+        h3,
+        #tablebox p {
+            /*A grouped selector has comma seperator but space is used to reference elements within elements*/
+            text-align: center;
+        }
+
+        #searchOptions {
+            margin: auto;
+            width: 80%;
+        }
+
+        .nav {
+            margin-top: 0;
+        }
+        
+        p {
+            text-align: center;
+        }
+
+        dt {
+      font-weight: bold;
+    }
+
+    dl {
+      background-color: white;
+      width: fit-content;
+      margin: 0% auto;
+      padding: 2%;
+      margin-left: auto;
+      border-radius: 20px;
+    }
+
+    #chosenSchoolDetails button {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    #myTutors {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    #formatOptionsDiv {
+      width: 92%;
+      margin: 0 auto;
+      display: flex;
+    }
+
+    #formatOptionsDiv button {
+         margin: 0 1%;
+    }
+
+    </style>
+</head>
+
+<body>
+    <!-- ========== NAVBAR (shared component - copy from index.html) ========== -->
+    <div class="banner" style="text-align: center;">
+        <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+        <h1></h1>
+        <p></p>
+    </div>
+    <div class="nav">
+        <a href="index.html">Home</a>
+        <a href="my_requests.html">Active Tutor Requests</a>
+        <a href="submit_request.html">Request a Tutor</a>
+        <a href="edit_request.html">Modify Tutor Request</a>
+        <a href="my_tutor.html">View School Tutors</a>
+        <a class="nav-switch" href="../staff/index.html">Go to Staff Side</a>
+    </div>
+    <!-- ========== PAGE BANNER / HERO (optional, page-specific) ========== -->
+    <!--To be Completed by Ahmad-->
+    <br>
+    <h1>My Assigned Tutors</h1>
+    <br>
+    <hr>
+    <br>
+    <p>Find out which tutors are assigned to the school you selected on the home page.
+    </p>
+    <br>
+    <!--Prompt a confirm message with queried school details-->
+
+    <!--Present chosen school detail. single row table-->
+    <div class="chosenSchool">
+        <h3>Your Chosen School's detail</h3>
+        <div id="chosenSchoolDetails"></div>
+        <br>
+    </div>
+    <br>
+    <hr>
+    <br>
+    <br>
+    <!-- ========== MAIN CONTENT GOES HERE ========== -->
+    <main>
+
+        <!-- If CRUD page: form for create/edit goes here -->
+        <!-- If View/Table page: table displaying records goes here -->
+        <div id="myTutors"></div>
+        <div id="feedbackDiv"></div>
+        
+    </main>
+    <!--Assignment id and a school id two form areas a school name maps to an id
+    assignment id box then display the tutors details -->
+
+    <!--A single tutor detail complete -->
+
+
+    <!--What about schools is the same as requests htmls-->
+    <!-- ========== FOOTER (shared component - copy from index.html) ========== -->
+
+    <!-- Page-specific JS at the bottom -->
+    <script src="../vendor/sqljs/sql-wasm.js"></script>
+    <script src="../js/browser-db.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        console.log("hello this works ig not?");
+        //printTable("SELECT sch.schoolID AS 'School ID', sch.schoolName AS 'School Name', sch.schoolPostcode, sch.schoolEmail, sch.schoolTelephone FROM tblSchool sch WHERE sch.schoolID > 0;","#schoolAssignedTutors");
+
+
+        let presentSchoolSelection = async (schoolID) => {
+            let result = await runSQL(`SELECT sch.schoolID, sch.schoolName, sch.schoolPostcode,
+         sch.schoolEmail, sch.schoolTelephone FROM tblSchool sch WHERE sch.schoolID = ${schoolID};`);
+            let chosenSchoolElement = document.querySelector("#chosenSchoolDetails");
+            chosenSchoolElement.appendChild(createObjectDl(result.data[0]));
+            const button = document.createElement("button");
+                button.textContent = "Choose Another School";
+                button.addEventListener("click", () => {
+                    window.location.href = "index.html";
+                });
+            chosenSchoolElement.appendChild(document.createElement("br"));
+            chosenSchoolElement.appendChild(button);
+
+        };
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            //printTablePages("SELECT t.tutorID, t.tutorName, t.tutorTelephone, t.tutorEmail, t.tutorStatus, r.requestedEducationLevel FROM tblTutor t JOIN tblAssignment a ON t.tutorID = a.tutorID JOIN tblRequest r ON a.requestID = r.requestID WHERE r.schoolID = 1001;", 5,true,"#tutorTable");
+            let sqlQuery = "SELECT tu.tutorId AS 'ID',CONCAT(tu.tutorFName,' ',tu.tutorLName) AS 'Tutor Name',tu.tutorEmail AS 'Email',tu.tutorTelephone AS 'Telephone',tu.tutorStatus AS 'Status',tu.tutorEduLevel AS 'Education Level' ,sub.subjectName AS 'Subject', asg.assignmentDateCreated AS 'Date Assigned', asg.assignmentDateClosed AS 'Date Closed' FROM tblAssignment asg INNER JOIN tblRequest req ON asg.requestID = req.requestID INNER JOIN tblSchool sch ON sch.schoolID = req.schoolID INNER JOIN tblTutor tu ON tu.tutorId = asg.tutorID LEFT JOIN tblSubject sub ON req.subjectID = sub.subjectID";
+            let sqlQueryWhere = "";
+            const schoolSelection = getSchoolSelection();
+            if(schoolSelection !== null && schoolSelection.schoolID !== undefined) {
+            await presentSchoolSelection(getSchoolSelection().schoolID);
+            sqlQueryWhere = ` WHERE sch.schoolID = ${schoolSelection.schoolID}`;
+            const myTutorsElement = document.querySelector("#myTutors");
+            const header = document.createElement("h2");
+            header.textContent = "My Tutors Table";
+            const message = document.createElement("p");
+            message.textContent = "These are the tutors that are assigned to your school.";
+            const tableDiv = document.createElement("div");
+            tableDiv.id = "tutorTable";
+            const result = await runSQL(sqlQuery+sqlQueryWhere+";");
+            const resultSuccess = await runWriteSQL(sqlQuery+sqlQueryWhere+";");
+            if(result !== undefined && result.data.length > 0) {
+            myTutorsElement.appendChild(header);
+            myTutorsElement.appendChild(document.createElement("br"));
+            myTutorsElement.appendChild(message);
+            myTutorsElement.appendChild(tableDiv);
+            printTablePages(sqlQuery+sqlQueryWhere+";", 10, false, "#tutorTable");
+            } else if(resultSuccess === true){
+                const feedbackElement = document.querySelector("#feedbackDiv");
+                feedbackElement.classList.add("errorMessage");
+                const message = document.createElement("p");
+                message.textContent = "Your school has no assigned tutors to be displayed.";
+                feedbackElement.appendChild(message);
+                feedbackElement.appendChild(document.createElement("br"));
+                const button = document.createElement("button");
+                button.textContent = "Return to Home Page";
+                button.addEventListener("click", () => {
+                    window.location.href = "index.html";
+                });
+                feedbackElement.appendChild(button);
+            } else {
+                const feedbackElement = document.querySelector("#feedbackDiv");
+                feedbackElement.classList.add("errorMessage");
+                const message = document.createElement("p");
+                message.textContent = "Error unable to fetch tutors from database";
+                feedbackElement.appendChild(message);
+                feedbackElement.appendChild(document.createElement("br"));
+                const button = document.createElement("button");
+                button.textContent = "Return to Home Page";
+                button.addEventListener("click", () => {
+                    window.location.href = "index.html";
+                });
+                feedbackElement.appendChild(button);
+
+            }
+            } else {
+                const feedbackElement = document.querySelector("#feedbackDiv");
+                feedbackElement.classList.add("errorMessage");
+                const message = document.createElement("p");
+                const button = document.createElement("button");
+                button.textContent = "Return to Home Page";
+                message.textContent = "Please select a school from the schools home page before visiting this page.";
+                feedbackElement.appendChild(message);
+                feedbackElement.appendChild(document.createElement("br"));
+                feedbackElement.appendChild(button);
+                button.addEventListener("click", () => {
+                    window.location.href = "index.html";
+                });
+
+
+                console.log("No school selection found in local storage");
+            }
+
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutors</title>
+    <link rel="stylesheet" href="../GeneralCSS/Style.css">
+</head>
+
+<body>
+    <!-- ========== NAVBAR (shared component - copy from index.html) ========== -->
+    <div class="banner">
+        <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+        <h1></h1>
+        <p></p>
+    </div>
+    <br>
+
+    <div class="nav">
+        <a href="index.html">Home</a>
+        <a href="schools.html">Schools</a>
+        <a href="tutors.html">Tutors</a>
+        <a href="requests.html">Requests</a>
+        <a href="assignments.html">Assignments</a>
+        <a class="nav-switch" href="../school/index.html">Go To School side</a>
+    </div>
+
+
+    <!-- Main Section -->
+    <div class="main">
+        <div id="msg" style="display: none;"></div>
+        <h2>Tutors</h2>
+        <p>
+            This page shows difrent tutors. Use the filter section below
+            to search for a specific tutor by ID, Forename, tutor Email, Tuttor Status or Tutuor EDU level.
+        </p>
+        <br>
+        <button type="button" id="createTutor" style="width: 100%; text-align: center;">Click to add new Tutor</button>
+        <div id="tutorCreateSection" style="display: none; width: 100%; align-items: center; gap: 10px;">
+
+            <h3>Creat Tutor</h3>
+
+            <label for="createTutorFName">Forname</label>
+            <input type="text" id="createTutorFName">
+            <br>
+            <label for="createTutorLName">Surname</label>
+            <input type="text" id="createTutorLName">
+            <br>
+            <label for="createTutorTelephone">Tutor Telephone</label>
+            <input type="text" id="createTutorTelephone">
+            <br>
+            <label for="createTutorEmail">Tutor Email</label>
+            <input type="text" id="createTutorEmail">
+            <br>
+            <label for="createTutorStatus">Tutor Status</label>
+            <select id="createTutorStatus">
+                <option value="Available">Available</option>
+                <option value="Unavailable">Unavailable</option>
+            </select>
+            <br>
+            <label for="createTutorEduLevel">Tutor EDU Level</label>
+            <select id="createTutorEduLevel">
+                <option value="Primary">Primary</option>
+                <option value="Secondary">Secondary</option>
+                <option value="Tertiary">Tertiary</option>
+                <option value="Other">Other</option>
+            </select>
+            <br>
+            <button type="button" id="saveCreateTutor" class="button">Create Tutor</button>
+            <button type="button" id="cancelCreateTutor" class="button">Cancel</button>
+
+        </div>
+        <br>
+        <br>
+        <div id="tutorListSection">
+            <h3>Filter Tutors</h3>
+
+            <form id="filterRequestsForm">
+
+                <!-- normal search box -->
+                <div style="display: flex; width: 100%; align-items: center; gap: 10px;">
+
+                    <div style="flex: 1;">
+                        <input type="text" id="searchInput" name="searchInput" placeholder="Enter search term..."
+                            style="width: 100%; box-sizing: border-box;">
+
+                        <select id="statusInput" name="statusInput" style="width:100%; display: none;">
+                            <option value="">-- Select Status --</option>
+                            <option value="Available">Available</option>
+                            <option value="Unavailable">Unavailable</option>
+                        </select>
+
+                        <select id="eduLevelInput" name="eduLevelInput" style="width:100%; display: none;">
+                            <option value="">-- Select Tutor EDU Level --</option>
+                            <option value="Primary">Primary</option>
+                            <option value="Secondary">Secondary</option>
+                            <option value="Tertiary">Tertiary</option>
+                            <option value="Other">Other</option>
+                        </select>
+
+                    </div>
+
+
+                    <select id="searchBy" name="searchBy" style="width: 180px;" onchange="toggleStatusField()">
+                        <option value="">-- Select Filter --</option>
+                        <option value="tutorId">Tutor ID</option>
+                        <option value="tutorFName">Forname</option>
+                        <option value="tutorLName">Surname</option>
+                        <option value="tutorTelephone">Tutor Telephone</option>
+                        <option value="tutorEmail">Tutor Email</option>
+                        <option value="tutorStatus">Tutor Status</option>
+                        <option value="tutorEduLevel">Tutor Edu Level</option>
+                    </select>
+
+                    <!-- date range fields -->
+
+                </div>
+
+                <button type="submit" class="button">Search</button>
+
+            </form>
+
+
+            <br>
+
+            <h3>Tutor List</h3>
+            <br>
+            <div id="divID"></div>
+        </div>
+        <div id="tutorCrudSelection">
+
+            <h3>Selected Tutor Details</h3>
+
+            <label for="editTutorID">Tutor ID</label>
+            <input type="text" id="editTutorID" readonly>
+            <br>
+            <label for="editTutorFName">Forname</label>
+            <input type="text" id="editTutorFName">
+            <br>
+            <label for="editTutorLName">Surname</label>
+            <input type="text" id="editTutorLName">
+            <br>
+            <label for="editTutorTelephone">Tutor Telephone</label>
+            <input type="text" id="editTutorTelephone">
+            <br>
+            <label for="editTutorEmail">Tutor Email</label>
+            <input type="text" id="editTutorEmail">
+            <br>
+            <label for="editTutorStatus">Tutor Status</label>
+            <select id="editTutorStatus">
+                <option value="Available">Available</option>
+                <option value="Unavailable">Unavailable</option>
+            </select>
+            <br>
+            <label for="editTutorEduLevel">Tutor EDU Level</label>
+            <select id="editTutorEduLevel">
+                <option value="Primary">Primary</option>
+                <option value="Secondary">Secondary</option>
+                <option value="Tertiary">Tertiary</option>
+                <option value="Other">Other</option>
+            </select>
+            <br>
+            <button type="button" id="updateTutor" class="button">Update Tutor</button>
+            <button type="button" id="deleteTutor" class="button">Delete Tutor</button>
+            <button type="button" id="cancelEdit" class="button">Cancel</button>
+
+        </div>
+        <br>
+        <br>
+        <div id="ChartSection">
+            <h2 style="text-align: center;"><u>Least Represented Available Tuttor Education Levels</u></h2>
+            <br>
+            <p style="text-align: center;">This chart shows which education levels currently have the fewest available
+                tutors.
+                It helps staff identify where tutor availability may be limited.</p>
+            <br>
+            <div class="chart-wrapper">
+                <canvas id="tutorEDULevelChart"></canvas>
+            </div>
+
+
+        </div>
+
+
+    </div>
+    <script src="../vendor/sqljs/sql-wasm.js"></script>
+    <script src="../js/browser-db.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+
+        const messageOutput = document.querySelector("#msg");
+
+        // clear message after showing--------------------------------------------------------------------------
+        function clearMessage() {
+            messageOutput.textContent = "";
+            messageOutput.style.display = "none";
+            messageOutput.classList.remove("feedbackMessage", "errorMessage");
+        }
+
+        //Shows message i succsessful or not----------------------------------------------------------------------------
+        function showMessage(message, type) {
+            messageOutput.textContent = message;
+            messageOutput.style.display = "block";
+
+            //removing old message
+            messageOutput.classList.remove("feedbackMessage", "errorMessage");
+
+            //add a correct style based on success
+            if (type === "success") {
+                messageOutput.classList.add("feedbackMessage");
+            } else {
+                messageOutput.classList.add("errorMessage");
+            }
+
+            setTimeout(() => {
+                document.addEventListener("click", clearMessage, { once: true })
+            }, 0);
+        }
+
+
+        //clear message if user searches anything in search input------------------------------------------------
+        document.getElementById("searchInput").addEventListener("input", clearMessage);
+        document.getElementById("searchBy").addEventListener("change", clearMessage);
+        document.getElementById("statusInput").addEventListener("change", clearMessage);
+        document.getElementById("eduLevelInput").addEventListener("change", clearMessage);
+
+
+        //this code will print all the tutors in the table when the page loads--------------------------------------------------
+        document.addEventListener("DOMContentLoaded", async () => {
+            printTablePages("SELECT * FROM tblTutor;", 19, true, "#divID");
+
+            //will hide the crud selection
+            document.getElementById("tutorCrudSelection").style.display = "none";
+            //will hide the create section
+            document.getElementById("tutorCreateSection").style.display = "none";
+        });
+
+        //save created tutor button
+        document.getElementById("createTutor").addEventListener("click", function () {
+            document.getElementById("tutorCrudSelection").style.display = "none";
+            //hide the create form
+            document.getElementById("tutorCreateSection").style.display = "block";
+            //show the list part from the page
+            document.getElementById("tutorListSection").style.display = "none";
+            //hide the creat button selection
+            document.getElementById("createTutor").style.display = "none";
+        });
+
+        //view tutur botton handeler-----------------------------------------------------------------------------------------
+        document.getElementById("divID").addEventListener("click", function (event) {
+            if (event.target.tagName === "BUTTON" && event.target.textContent.trim() === "Select") {
+                setTimeout(() => {
+                    const tutor = getSelectedRow();
+                    if (!tutor) {
+                        console.log("no tutor selected")
+                        return;
+                    }
+                    loadTutorIntoCrudForm(tutor);
+                }, 0);
+            }
+        });
+
+        //Load selected tutor--------------------------------------------------------------------------------------
+        function loadTutorIntoCrudForm(tutor) {
+            console.log("selected tutor object:", tutor);
+            console.log("selected tutor id:", tutor.tutorId);
+
+            //hide the list part from the page
+            document.getElementById("tutorListSection").style.display = "none";
+
+            //show the crud selection
+            document.getElementById("tutorCrudSelection").style.display = "block";
+
+            //hide the creat button selection
+            document.getElementById("createTutor").style.display = "none";
+
+            //loadig input values at the top of the page
+            document.getElementById("editTutorID").value = tutor.tutorId || "";
+            document.getElementById("editTutorFName").value = tutor.tutorFName || "";
+            document.getElementById("editTutorLName").value = tutor.tutorLName || "";
+            document.getElementById("editTutorTelephone").value = tutor.tutorTelephone || "";
+            document.getElementById("editTutorEmail").value = tutor.tutorEmail || "";
+            document.getElementById("editTutorStatus").value = tutor.tutorStatus || "Available";
+            document.getElementById("editTutorEduLevel").value = tutor.tutorEduLevel || "Primary";
+
+            document.getElementById("tutorCrudSelection").scrollIntoView({ behavior: "smooth" });
+        }
+
+        //validation for missinput---------------------------------------------------------------------------------------
+        function validInput(tutorFName, tutorLName, tutorTelephone, tutorEmail) {
+
+            tutorFName = tutorFName.trim();
+            tutorLName = tutorLName.trim();
+            tutorTelephone = tutorTelephone.trim();
+            tutorEmail = tutorEmail.trim();
+
+            //error message for blank values
+            if (tutorFName === "" || tutorLName === "" || tutorTelephone === "" || tutorEmail === "") {
+                return "Please fill out all the values";
+            }
+
+            //validaton for names which must containe letters only
+            const validName = /^[A-Za-z]+$/;
+            if (!validName.test(tutorFName)) {
+                return "Fornames must containe letters only and no spaces in between";
+            }
+            if (!validName.test(tutorLName)) {
+                return "Surnames must containe letters only and no spaces in between";
+            }
+
+            //for inputing valid number and not letters
+            const validNumber = /^[0-9+\-\s]+$/;
+            if (!validNumber.test(tutorTelephone)) {
+                return "Telephone must contain only numbers, spaces, + or -";
+            }
+
+            //for valid email input
+            const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!validEmail.test(tutorEmail)) {
+                return "Please enter correct email!";
+            }
+
+            return null;
+        }
+
+
+        // create Tutor code-------------------------------------------------------------------------------------------
+        document.getElementById("saveCreateTutor").addEventListener("click", async function () {
+            const tutorFName = document.getElementById("createTutorFName").value;
+            const tutorLName = document.getElementById("createTutorLName").value;
+            const tutorTelephone = document.getElementById("createTutorTelephone").value;
+            const tutorEmail = document.getElementById("createTutorEmail").value;
+            const tutorStatus = escapeSQL(document.getElementById("createTutorStatus").value);
+            const tutorEduLevel = escapeSQL(document.getElementById("createTutorEduLevel").value);
+
+            //create a new variable to check valid input
+            const validationMessage = validInput(tutorFName, tutorLName, tutorTelephone, tutorEmail);
+            //if valid input returns anything els other than null show the return message as error
+            if (validationMessage !== null) {
+                showMessage(validationMessage, "error");
+                return;
+            }
+            const safeTutorFName = escapeSQL(tutorFName.trim());
+            const safeTutorLName = escapeSQL(tutorLName.trim());
+            const safeTutorTelephone = escapeSQL(tutorTelephone.trim());
+            const safeTutorEmail = escapeSQL(tutorEmail.trim());
+
+
+            const sql = cleanSQL(`
+            INSERT INTO tblTutor (
+            tutorFName,
+            tutorLName,
+            tutorTelephone,
+            tutorEmail,
+            tutorStatus,
+            tutorEduLevel
+            )
+            VALUES(
+            '${safeTutorFName}',
+            '${safeTutorLName}',
+            '${safeTutorTelephone}',
+            '${safeTutorEmail}',
+            '${tutorStatus}',
+            '${tutorEduLevel}'
+            )
+            `)
+
+            console.log(sql);
+            const ok = await runWriteSQL(sql);
+
+            if (ok) {
+                showMessage("New Tutor information created succesfully", "success");
+
+                //hide the create form
+                document.getElementById("tutorCreateSection").style.display = "none";
+
+                //show the list part from the page
+                document.getElementById("tutorListSection").style.display = "block";
+
+                //show the creat button selection
+                document.getElementById("createTutor").style.display = "block";
+
+                //print the tables after the create
+                printTablePages("SELECT * FROM tblTutor;", 19, true, "#divID");
+                //back to the top of the page
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+            else {
+                showMessage("Tutor creation failed", "error");
+            }
+
+        });
+
+
+
+
+        //cancel create button
+        document.getElementById("cancelCreateTutor").addEventListener("click", function () {
+            //hide the create form
+            document.getElementById("tutorCreateSection").style.display = "none";
+
+            //show the list part from the page
+            document.getElementById("tutorListSection").style.display = "block";
+
+            //show the crud selection
+            document.getElementById("createTutor").style.display = "block";
+
+            //loadig input values at the top of the page
+            document.getElementById("createTutorFName").value = "";
+            document.getElementById("createTutorLName").value = "";
+            document.getElementById("createTutorTelephone").value = "";
+            document.getElementById("createTutorEmail").value = "";
+            document.getElementById("createTutorStatus").value = "Available";
+            document.getElementById("createTutorEduLevel").value = "Primary";
+            //back to the top of the page
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+
+
+        //update selected tutor---------------------------------------------------------------------------------------
+        document.getElementById("updateTutor").addEventListener("click", async function () {
+            const confirmed = confirm("Are you sure you want to Update this Tutor?");
+            if (!confirmed) {
+                return;
+            }
+            const tutorID = document.getElementById("editTutorID").value.trim();
+            console.log("editTutorID value beforUpdate:", tutorID);
+
+            const tutorFName = document.getElementById("editTutorFName").value;
+            const tutorLName = document.getElementById("editTutorLName").value;
+            const tutorTelephone = document.getElementById("editTutorTelephone").value;
+            const tutorEmail = document.getElementById("editTutorEmail").value;
+            const tutorStatus = escapeSQL(document.getElementById("editTutorStatus").value);
+            const tutorEduLevel = escapeSQL(document.getElementById("editTutorEduLevel").value);
+
+            //create a new variable to check valid input
+            const validationMessage = validInput(tutorFName, tutorLName, tutorTelephone, tutorEmail);
+            //if valid input returns anything els other than null show the return message as error
+            if (validationMessage !== null) {
+                showMessage(validationMessage, "error");
+                return;
+            }
+            const safeTutorFName = escapeSQL(tutorFName.trim());
+            const safeTutorLName = escapeSQL(tutorLName.trim());
+            const safeTutorTelephone = escapeSQL(tutorTelephone.trim());
+            const safeTutorEmail = escapeSQL(tutorEmail.trim());
+
+            const sql = cleanSQL(`
+           UPDATE tblTutor
+           SET tutorFName = '${safeTutorFName}',
+            tutorLName = '${safeTutorLName}',
+            tutorTelephone = '${safeTutorTelephone}',
+            tutorEmail = '${safeTutorEmail}',
+            tutorStatus = '${tutorStatus}',
+            tutorEduLevel = '${tutorEduLevel}'
+           WHERE tutorId = ${tutorID}
+           `);
+
+
+
+            console.log(sql);
+            const ok = await runWriteSQL(sql);
+
+
+            if (ok) {
+                showMessage("Tutor Information Updated Successfully", "success");
+                //hide edit section
+                document.getElementById("tutorCrudSelection").style.display = "none";
+                //show the list
+                document.getElementById("tutorListSection").style.display = "block";
+                // show the create tutor button again
+                document.getElementById("createTutor").style.display = "block";
+                //print the tables after the update
+                printTablePages("SELECT * FROM tblTutor;", 19, true, "#divID");
+                //back to the top of the page
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            } else {
+                showMessage("Tutor Information Update Failed", "error");
+            }
+        });
+
+        //delete selected tutor--------------------------------------------------------------------------------------------
+        document.getElementById("deleteTutor").addEventListener("click", async () => {
+
+            const confirmed = confirm("Are you sure you want to Delete this Tutor?");
+            if (!confirmed) {
+                return;
+            }
+
+            const tutorID = document.getElementById("editTutorID").value.trim();
+            //first delete child rows
+            const deleteAssignmentsSQL = `DELETE FROM tblAssignment WHERE tutorID = ${tutorID}`;
+            console.log(deleteAssignmentsSQL);
+            const deleteAssignment = await runWriteSQL(deleteAssignmentsSQL);
+            if (!deleteAssignment) {
+                console.log("Delete Failed tblAssinment");
+                showMessage("Tutor Information Delete Failed", "error");
+                return;
+            }
+
+            const deleteSubjectTutorSQL = `DELETE FROM tblSubjectTutor WHERE tutorId = ${tutorID}`;
+            console.log(deleteSubjectTutorSQL);
+            const deleteSubjectTutor = await runWriteSQL(deleteSubjectTutorSQL);
+            if (!deleteSubjectTutor) {
+                console.log("Delete Failed tblSubjectTutor");
+                showMessage("Tutor Information Delete Failed", "error");
+                return;
+            }
+
+            //then delte the parent rows
+            const deleteTutorSQL = `DELETE FROM tblTutor WHERE tutorID = ${tutorID}`;
+            console.log(deleteTutorSQL);
+            const tutorDelete = await runWriteSQL(deleteTutorSQL);
+            if (!tutorDelete) {
+                console.log("Delete Failed on tblTutor");
+                showMessage("Tutor Information Delete Failed", "error");
+                return;
+            }
+
+            if (tutorDelete) {
+                showMessage("Tutor Information Deleted Successfully", "success");
+                //hide edit section
+                document.getElementById("tutorCrudSelection").style.display = "none";
+                //show the list
+                document.getElementById("tutorListSection").style.display = "block";
+                // show the create tutor button again
+                document.getElementById("createTutor").style.display = "block";
+                //print the tables after the delete
+                printTablePages("SELECT * FROM tblTutor;", 19, true, "#divID");
+                //back to the top of the page
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            } else {
+                showMessage("Tutor Information Delete Failed", "error");
+            }
+        });
+
+        //cancel button-----------------------------------------------------------------------------------------------------------
+        //will use cancel button and go back to the tutors page if user misclicks wrong tutor
+        document.getElementById("cancelEdit").addEventListener("click", async function () {
+            //hide edit section
+            document.getElementById("tutorCrudSelection").style.display = "none";
+
+            //show the list
+            document.getElementById("tutorListSection").style.display = "block";
+
+
+            //hide the create form
+            document.getElementById("tutorCreateSection").style.display = "none";
+
+            //show the crud selection
+            document.getElementById("createTutor").style.display = "block";
+
+            //loadig input values at the top of the page
+            document.getElementById("createTutorFName").value = "";
+            document.getElementById("createTutorLName").value = "";
+            document.getElementById("createTutorTelephone").value = "";
+            document.getElementById("createTutorEmail").value = "";
+            document.getElementById("createTutorStatus").value = "Available";
+            document.getElementById("createTutorEduLevel").value = "Primary";
+            //back to the top of the page
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+
+
+        //Search code---------------------------------------------------------------------------------------------------------------
+        //this code will search tutors based on selected information by the user.
+        document.getElementById("filterRequestsForm").addEventListener("submit", async function (event) {
+            event.preventDefault(); // Prevent form submission
+
+            const searchBy = document.getElementById("searchBy").value;
+            const searchInput = document.getElementById("searchInput").value.trim();
+            const statusInput = document.getElementById("statusInput").value;
+            const eduLevelInput = document.getElementById("eduLevelInput").value;
+
+            let sql = "SELECT * FROM tblTutor";
+            //if no filter is sellected show all tutors
+            if (searchBy === "") {
+                printTablePages(sql + ";", 19, true, "#divID")
+                return;
+            }
+
+            //if tutor status is selected then use the drop down valus
+            if (searchBy === "tutorStatus") {
+                //only if status is selected
+                if (statusInput !== "") {
+                    sql += ` WHERE tutorStatus = '${statusInput}'`;
+                }
+            }
+
+            //if tutor status is selected then use the drop down valus
+            else if (searchBy === "tutorEduLevel") {
+                //only if status is selected
+                if (eduLevelInput !== "") {
+                    sql += ` WHERE tutorEduLevel = '${eduLevelInput}'`;
+                }
+            }
+
+            //for the wrest of the filters use the matching
+            else if (searchInput !== "") {
+                if (searchBy === "tutorId") {
+                    sql += ` WHERE tutorId = ${searchInput}`;
+                }
+                //for other search inputs like email and phone number
+                else {
+                    sql += ` WHERE ${searchBy} LIKE '%${searchInput}%'`;
+                }
+            }
+            sql += ";";
+
+            console.log(sql);
+
+            printTablePages(sql, 19, true, "#divID");
+        });
+
+        //Code for drop down search menu-----------------------------------------------------------------------------------------------
+        //this function will toggle the search status dropdown based on the selected filter
+        function toggleStatusField() {
+            const searchBy = document.getElementById("searchBy").value;
+            const searchInput = document.getElementById("searchInput");
+            const statusInput = document.getElementById("statusInput");
+            const eduLevelInput = document.getElementById("eduLevelInput");
+
+            if (searchBy === "tutorStatus") {
+                searchInput.style.display = "none";
+                statusInput.style.display = "block";
+                eduLevelInput.style.display = "none";
+            }
+            else if (searchBy === "tutorEduLevel") {
+                searchInput.style.display = "none";
+                statusInput.style.display = "none";
+                eduLevelInput.style.display = "block";
+            }
+            else {
+                searchInput.style.display = "block";
+                statusInput.style.display = "none";
+                eduLevelInput.style.display = "none";
+            }
+        }
+
+        //chart code for least represented tutor education levels-----------------------------------------------------------------------------------------------
+        document.addEventListener("DOMContentLoaded", async () => {
+            const ctx = document.getElementById('tutorEDULevelChart').getContext('2d');
+            const data = await getTutorEduLevelData();
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Number of Available Tutors',
+                        data: data.counts,
+                        backgroundColor: "#cc0000",
+                        borderColor: "#cc0000",
+                        borderWidth: 0.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0,
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        });
+        async function getTutorEduLevelData() {
+            const sql = cleanSQL(`
+                SELECT
+                CONCAT(t.tutorEduLevel, ' Level') AS educationLevel,
+                COUNT(t.tutorId) AS availableTutorCount
+                FROM tblTutor t
+                WHERE t.tutorStatus = 'Available'
+                GROUP BY t.tutorEduLevel
+                having COUNT(t.tutorID) > 0
+                ORDER BY availableTutorCount ASC, t.tutorEduLevel ASC
+                lIMIT 5;
+            `);
+            const result = await runSQL(sql);
+
+            console.log("chart result:", result);
+
+            if (!result || !result.data || result.data.length === 0) {
+                return {
+                    labels: [],
+                    counts: []
+                };
+            }
+            const labels = result.data.map(row => row.educationLevel);
+            const counts = result.data.map(row => Number(row.availableTutorCount));
+            return { labels, counts };
+        }
+
+    </script>
+
+</body>
+
+</html>

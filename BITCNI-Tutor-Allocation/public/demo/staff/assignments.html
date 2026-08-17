@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Assignments</title>
+<link rel="stylesheet" href="../GeneralCSS/Style.css">
+<style>
+  h1 {
+  font: bold 35px Arial, sans-serif;
+  color: #7a0000;
+  margin: 20px 0 10px 20px;
+}
+
+#searchAssignmentsForm {
+  width: 40%;
+  margin: 20px auto;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 10px;
+  padding: 30px;
+}
+
+.form-row {
+  margin-bottom: 20px;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font: bold 18px Arial, sans-serif;
+  color: #7a0000;
+}
+
+.form-row input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid black;
+  border-radius: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+#tableOutput {
+  margin: 20px auto;
+  width: 90%;
+}
+
+#tableOutput p,
+#unassignedRequestsOutput p,
+#unassignedChart p {
+  font: italic 16px Arial, sans-serif;
+  color: #555555;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.report-section {
+  margin-top: 40px;
+}
+
+.report-section h2 {
+  margin-bottom: 10px;
+}
+
+#unassignedRequestsOutput {
+  margin: 20px auto;
+  width: 90%;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pagination-status {
+  font: bold 16px Arial, sans-serif;
+  color: #7a0000;
+}
+
+#unassignedChart {
+  width: 90%;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 12px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 50px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.chart-label,
+.chart-value {
+  font: bold 16px Arial, sans-serif;
+  color: #7a0000;
+}
+
+.chart-bar-track {
+  width: 100%;
+  height: 24px;
+  background-color: #f1e9d2;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #d7ccb0;
+}
+
+.chart-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #cc0000, #e07a5f);
+  border-radius: 999px;
+}
+
+#message {
+  margin-top: 15px;
+  font: bold 16px Arial, sans-serif;
+  color: #cc0000;
+  text-align: center;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- banner containing image -->
+<div class="banner" style="text-align: center;">
+<img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+</div>
+<br>
+
+<!-- Nav bar -->
+<div class="nav">
+  <a href="index.html">Home</a>
+  <a href="schools.html">Schools</a>
+  <a href="tutors.html">Tutors</a>
+  <a href="requests.html">Requests</a>
+  <a href="assignments.html">Assignments</a>
+  <a class="nav-switch" href="../school/index.html">Go to School Side</a>
+</div>
+
+<h1>My Assignments</h1>
+
+<div class="main">
+<p>Enter your Tutor ID below to view the schools you have been assigned to.</p>
+
+<form id="searchAssignmentsForm">
+  <div class="form-row">
+    <label for="tutorID">Tutor ID</label>
+    <input type="number" id="tutorID" required>
+  </div>
+  <br>
+  <button type="submit">Search Assignments</button>
+</form>
+<br>
+
+<!-- Table populated via JS by querying tblAssignment -->
+<div id="tableOutput"></div>
+<br>
+
+<div id="message" class="message"></div>
+
+<div class="report-section">
+  <p>The table and chart below show tutor requests that have not yet been assigned a tutor.</p>
+  <div id="unassignedRequestsOutput"></div>
+  <div id="unassignedChart"></div>
+</div>
+
+</div>
+
+<script src="../vendor/sqljs/sql-wasm.js"></script>
+<script src="../js/browser-db.js"></script>
+<script src="../js/main.js"></script>
+<script>
+const setMessage = (text, isError = false) => {
+  const message = document.querySelector("#message");
+  if (!message) {
+    return;
+  }
+
+  message.textContent = text;
+  message.style.color = isError ? "#cc0000" : "#0a6b2d";
+};
+
+const runSQLSafe = async (sql) => {
+  try {
+    return await window.executeDemoSQL(sql);
+  } catch (error) {
+    return { error: error.message };
+  }
+};
+
+const runFirstSuccessfulQuery = async (queries) => {
+  let lastError = null;
+
+  for (const sql of queries) {
+    const result = await runSQLSafe(sql.trim());
+
+    if (!result?.error) {
+      return result;
+    }
+
+    lastError = result.error;
+  }
+
+  return { error: lastError || "No query variant succeeded." };
+};
+
+const UNASSIGNED_REQUESTS_PER_PAGE = 20;
+let unassignedRequestsData = [];
+let currentUnassignedPage = 1;
+
+const renderAssignmentsTable = (assignments) => {
+  const tableOutput = document.querySelector("#tableOutput");
+  tableOutput.innerHTML = "";
+
+  if (!assignments || assignments.length === 0) {
+    tableOutput.innerHTML = "<p>No assignments are currently recorded for this Tutor ID.</p>";
+    return;
+  }
+
+  const table = document.createElement("table");
+  const headerRow = document.createElement("tr");
+  const headers = [
+    "Assignment ID",
+    "Request ID",
+    "School Name",
+    "School Postcode",
+    "Subject Name",
+    "Education Level",
+    "Description",
+    "Date Created"
+  ];
+
+  for (const headerText of headers) {
+    const th = document.createElement("th");
+    th.textContent = headerText;
+    headerRow.appendChild(th);
+  }
+
+  table.appendChild(headerRow);
+
+  for (const assignment of assignments) {
+    const row = document.createElement("tr");
+    const values = [
+      assignment.assignmentID,
+      assignment.requestID,
+      assignment.schoolName,
+      assignment.schoolPostcode,
+      assignment.subjectName,
+      assignment.requestEduLevel,
+      assignment.requestDescription || "Not provided",
+      assignment.requestDateCreated
+    ];
+
+    for (const value of values) {
+      const td = document.createElement("td");
+      td.textContent = value ?? "Not provided";
+      row.appendChild(td);
+    }
+
+    table.appendChild(row);
+  }
+
+  tableOutput.appendChild(table);
+};
+
+const renderUnassignedRequestsTable = (requests, page = 1) => {
+  const output = document.querySelector("#unassignedRequestsOutput");
+  output.innerHTML = "";
+
+  if (!requests || requests.length === 0) {
+    output.innerHTML = "<p>No unassigned requests were found.</p>";
+    return;
+  }
+
+  const totalPages = Math.ceil(requests.length / UNASSIGNED_REQUESTS_PER_PAGE);
+  const safePage = Math.min(Math.max(page, 1), totalPages);
+  const startIndex = (safePage - 1) * UNASSIGNED_REQUESTS_PER_PAGE;
+  const pageRows = requests.slice(startIndex, startIndex + UNASSIGNED_REQUESTS_PER_PAGE);
+
+  const table = document.createElement("table");
+  const headerRow = document.createElement("tr");
+  const headers = [
+    "Request ID",
+    "School Name",
+    "Subject Name",
+    "Date Created"
+  ];
+
+  for (const headerText of headers) {
+    const th = document.createElement("th");
+    th.textContent = headerText;
+    headerRow.appendChild(th);
+  }
+
+  table.appendChild(headerRow);
+
+  for (const request of pageRows) {
+    const row = document.createElement("tr");
+    const values = [
+      request.requestID,
+      request.schoolName,
+      request.subjectName,
+      request.requestDateCreated
+    ];
+
+    for (const value of values) {
+      const td = document.createElement("td");
+      td.textContent = value ?? "Not provided";
+      row.appendChild(td);
+    }
+
+    table.appendChild(row);
+  }
+
+  output.appendChild(table);
+
+  if (totalPages > 1) {
+    const controls = document.createElement("div");
+    controls.className = "pagination-controls";
+
+    const previousButton = document.createElement("button");
+    previousButton.type = "button";
+    previousButton.textContent = "Previous";
+    previousButton.disabled = safePage === 1;
+    previousButton.addEventListener("click", () => {
+      currentUnassignedPage = safePage - 1;
+      renderUnassignedRequestsTable(unassignedRequestsData, currentUnassignedPage);
+    });
+
+    const status = document.createElement("span");
+    status.className = "pagination-status";
+    status.textContent = `Page ${safePage} of ${totalPages}`;
+
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.textContent = "Next";
+    nextButton.disabled = safePage === totalPages;
+    nextButton.addEventListener("click", () => {
+      currentUnassignedPage = safePage + 1;
+      renderUnassignedRequestsTable(unassignedRequestsData, currentUnassignedPage);
+    });
+
+    controls.appendChild(previousButton);
+    controls.appendChild(status);
+    controls.appendChild(nextButton);
+    output.appendChild(controls);
+  }
+};
+
+const renderUnassignedChart = (requests) => {
+  const chartOutput = document.querySelector("#unassignedChart");
+  chartOutput.innerHTML = "";
+
+  if (!requests || requests.length === 0) {
+    chartOutput.innerHTML = "<p>No chart data is available.</p>";
+    return;
+  }
+
+  const countsBySubject = {};
+  for (const request of requests) {
+    const subject = request.subjectName || "Unknown";
+    countsBySubject[subject] = (countsBySubject[subject] || 0) + 1;
+  }
+
+  const chartTitle = document.createElement("h3");
+  chartTitle.textContent = "Unassigned Requests by Subject";
+  chartOutput.appendChild(chartTitle);
+
+  const sortedEntries = Object.entries(countsBySubject).sort((a, b) => b[1] - a[1]);
+  const maxCount = sortedEntries[0][1];
+
+  for (const [subject, count] of sortedEntries) {
+    const row = document.createElement("div");
+    row.className = "chart-row";
+
+    const label = document.createElement("div");
+    label.className = "chart-label";
+    label.textContent = subject;
+
+    const track = document.createElement("div");
+    track.className = "chart-bar-track";
+
+    const fill = document.createElement("div");
+    fill.className = "chart-bar-fill";
+    fill.style.width = `${(count / maxCount) * 100}%`;
+    track.appendChild(fill);
+
+    const value = document.createElement("div");
+    value.className = "chart-value";
+    value.textContent = count;
+
+    row.appendChild(label);
+    row.appendChild(track);
+    row.appendChild(value);
+    chartOutput.appendChild(row);
+  }
+};
+
+const loadUnassignedRequestsReport = async () => {
+  const unassignedSql = `
+    SELECT
+      r.requestID,
+      s.schoolName,
+      sub.subjectName,
+      r.requestDateCreated
+    FROM tblRequest r
+    LEFT JOIN tblAssignment a ON r.requestID = a.requestID
+    INNER JOIN tblSchool s ON r.schoolID = s.schoolID
+    INNER JOIN tblSubject sub ON r.subjectID = sub.subjectID
+    WHERE a.assignmentID IS NULL
+    ORDER BY r.requestDateCreated ASC;
+  `;
+
+  try {
+    const result = await runSQLSafe(unassignedSql.trim());
+
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    unassignedRequestsData = result.data;
+    currentUnassignedPage = 1;
+    renderUnassignedRequestsTable(unassignedRequestsData, currentUnassignedPage);
+    renderUnassignedChart(result.data);
+  } catch (error) {
+    document.querySelector("#unassignedRequestsOutput").innerHTML =
+      `<p>Unassigned requests could not be loaded: ${error.message}</p>`;
+    document.querySelector("#unassignedChart").innerHTML =
+      "<p>The chart could not be displayed.</p>";
+  }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.querySelector("#searchAssignmentsForm");
+  loadUnassignedRequestsReport();
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const tutorID = document.querySelector("#tutorID").value.trim();
+    if (!tutorID) {
+      setMessage("Please enter a tutor ID before searching.", true);
+      return;
+    }
+
+    setMessage("Searching assignments...");
+
+    try {
+      const assignmentQueries = [
+        `
+          SELECT
+            a.assignmentID,
+            r.requestID,
+            s.schoolName,
+            s.schoolPostcode,
+            sub.subjectName,
+            r.requestEduLevel,
+            r.requestDescription,
+            r.requestDateCreated
+          FROM tblAssignment a
+          INNER JOIN tblRequest r ON a.requestID = r.requestID
+          INNER JOIN tblSchool s ON r.schoolID = s.schoolID
+          INNER JOIN tblSubject sub ON r.subjectID = sub.subjectID
+          WHERE a.tutorID = ${Number(tutorID)}
+          ORDER BY r.requestDateCreated DESC;
+        `,
+        `
+          SELECT
+            a.assignmentID,
+            r.requestID,
+            s.schoolName,
+            s.schoolPostcode,
+            sub.subjectName,
+            r.requestEduLevel,
+            r.requestDescription,
+            r.requestDateCreated
+          FROM tblAssignment a
+          INNER JOIN tblRequest r ON a.requestID = r.requestID
+          INNER JOIN tblSchool s ON r.schoolID = s.schoolID
+          INNER JOIN tblSubject sub ON r.subjectID = sub.subjectID
+          WHERE a.tutorId = ${Number(tutorID)}
+          ORDER BY r.requestDateCreated DESC;
+        `
+      ];
+
+      const result = await runFirstSuccessfulQuery(assignmentQueries);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      renderAssignmentsTable(result.data);
+
+      if (!result.data || result.data.length === 0) {
+        setMessage("No assignments are currently recorded for this Tutor ID.", true);
+      } else {
+        setMessage(`Found ${result.data.length} assignment(s).`);
+      }
+    } catch (error) {
+      document.querySelector("#tableOutput").innerHTML = "";
+      setMessage(`Assignments could not be loaded: ${error.message}`, true);
+    }
+  });
+});
+</script>
+</body>
+</html>

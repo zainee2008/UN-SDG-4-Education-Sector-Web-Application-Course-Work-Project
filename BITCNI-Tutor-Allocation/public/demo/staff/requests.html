@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Requests</title>
+  <link rel="stylesheet" href="../GeneralCSS/Style.css">
+  <style>
+    #report-buttons,
+    #query-dropdowns,
+    #parameterized-search,
+    #results,
+    #request-form {
+      margin-bottom: 30px;
+      padding-bottom: 30px;
+      border-bottom: 1px solid #cccccc;
+    }
+
+    #request-form {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    h3 {
+      margin-bottom: 12px;
+    }
+
+    #report-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    #query-dropdowns {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .form-row {
+      margin-bottom: 16px;
+    }
+
+    .form-row label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+
+    .form-row input[type="text"],
+    .form-row input[type="date"],
+    .form-row select,
+    .form-row textarea {
+      width: 300px;
+      max-width: 100%;
+      margin: 0;
+    }
+
+    .form-row textarea {
+      width: 100%;
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    #apply_feedback,
+    #search_feedback,
+    #form_feedback,
+    #results_feedback {
+      font: normal 14px Arial, sans-serif;
+      margin: 8px 0;
+      min-height: 18px;
+    }
+
+    #report-buttons button,
+    #prev,
+    #next {
+      background-color: #ffffff;
+      color: #7a1a22;
+      border: 2px solid #7a1a22;
+      font-weight: bold;
+    }
+
+    #report-buttons button:hover,
+    #prev:hover,
+    #next:hover {
+      background-color: #f5e6e7;
+    }
+
+    #report-buttons button.active {
+      background-color: #7a1a22;
+      color: #ffffff;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #results {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #results_table {
+      width: 100%;
+    }
+
+    #results_table:empty {
+      display: none;
+    }
+
+    #results_feedback {
+      text-align: center;
+    }
+
+    #results .pagination {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .nav {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+    <div class="banner" style="text-align: center;">
+      <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+    </div>
+
+    <div class="nav">
+      <a href="index.html">Home</a>
+      <a href="schools.html">Schools</a>
+      <a href="tutors.html">Tutors</a>
+      <a href="requests.html">Requests</a>
+      <a href="assignments.html">Assignments</a>
+      <a class="nav-switch" href="../school/index.html">Go To School side</a>
+    </div>
+    <br>
+
+    <main class="main">
+      <h3>Quick Reports</h3>
+      <div id="report-buttons">
+        <button id="fulfilled_requests">Fulfilled Requests</button>
+        <button id="unfulfilled_requests_high_priority">All Unfulfilled High-Priority Requests</button>
+        <button id="requests_by_subject">View Requests by Subject</button>
+        <button id="requests_by_region">View Requests by Region</button>
+      </div>
+
+      <h3>Grouped Analytics</h3>
+      <div id="query-dropdowns">
+        <select id="group">
+          <option value="">-- Group By --</option>
+          <option value="subject">Subject</option>
+          <option value="region">Region</option>
+          <option value="status">Status</option>
+        </select>
+
+        <select id="order">
+          <option value="">-- Order By --</option>
+          <option value="school_name">Alphabetical</option>
+          <option value="request_count">Number of Requests</option>
+        </select>
+
+        <p id="apply_feedback"></p>
+        <button id="apply">Apply</button>
+      </div>
+
+      <h3>Search Requests</h3>
+      <div id="parameterized-search">
+        <div class="form-row">
+          <label for="school_search">School Name</label>
+          <input type="text" id="school_search" maxlength="100">
+        </div>
+
+        <div class="form-row">
+          <label for="subject_search">Subject</label>
+          <select id="subject_search">
+            <option value="">-- Any Subject --</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="date_from_search">Date From</label>
+          <input type="date" id="date_from_search">
+        </div>
+
+        <div class="form-row">
+          <label for="date_to_search">Date To</label>
+          <input type="date" id="date_to_search">
+        </div>
+
+        <div class="form-row">
+          <label for="status_search">Status</label>
+          <select id="status_search">
+            <option value="">-- Any Status --</option>
+            <option value="fulfilled">Fulfilled</option>
+            <option value="unfulfilled">Unfulfilled</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="region_search">Region</label>
+          <input type="text" id="region_search" maxlength="100">
+        </div>
+
+        <p id="search_feedback"></p>
+        <button id="search">Search</button>
+      </div>
+
+      <h3>Results</h3>
+      <div id="results">
+        <p id="results_feedback"></p>
+        <table id="results_table"></table>
+        <div class="pagination">
+          <button id="prev">Previous</button>
+          <button id="next">Next</button>
+        </div>
+      </div>
+
+      <h3 id="request_form_heading">Add New Request</h3>
+      <div id="request-form">
+        <div class="form-row">
+          <label for="school_form">School</label>
+          <select id="school_form" required>
+            <option value="">-- Select School --</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="subject_form">Subject</label>
+          <select id="subject_form" required>
+            <option value="">-- Select Subject --</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="description_form">Description</label>
+          <textarea id="description_form" maxlength="500"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label for="date_form">Date</label>
+          <input type="date" id="date_form" required>
+        </div>
+
+        <div class="form-row">
+          <label for="edu_level_form">Education Level</label>
+          <select id="edu_level_form" required>
+            <option value="">-- Select Education Level --</option>
+            <option value="Primary">Primary</option>
+            <option value="Secondary">Secondary</option>
+            <option value="Tertiary">Tertiary</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <p id="form_feedback"></p>
+        <button id="submit_request">Submit</button>
+        <button id="cancel_edit" type="button" style="display: none;">Cancel</button>
+      </div>
+    </main>
+
+  <script src="../vendor/sqljs/sql-wasm.js"></script>
+  <script src="../js/browser-db.js"></script>
+  <script src="../js/main.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // -------------------- DOM References --------------------
+      const prevButton = document.getElementById("prev")
+      const nextButton = document.getElementById("next")
+
+      const resultsTable = document.getElementById("results_table")
+      const resultsFeedback = document.getElementById("results_feedback")
+
+      const requestFormHeading = document.getElementById("request_form_heading")
+      const submitRequestButton = document.getElementById("submit_request")
+      const cancelEditButton = document.getElementById("cancel_edit")
+      const formFeedback = document.getElementById("form_feedback")
+
+      const schoolForm = document.getElementById("school_form")
+      const subjectForm = document.getElementById("subject_form")
+      const descriptionForm = document.getElementById("description_form")
+      const dateForm = document.getElementById("date_form")
+      const eduLevelForm = document.getElementById("edu_level_form")
+
+      const subjectSearchDropdown = document.getElementById("subject_search")
+      const schoolSearchInput = document.getElementById("school_search")
+      const dateFromSearchInput = document.getElementById("date_from_search")
+      const dateToSearchInput = document.getElementById("date_to_search")
+      const statusSearchDropdown = document.getElementById("status_search")
+      const regionSearchInput = document.getElementById("region_search")
+      const searchFeedback = document.getElementById("search_feedback")
+
+      const groupDropdown = document.getElementById("group")
+      const orderDropdown = document.getElementById("order")
+      const applyButton = document.getElementById("apply")
+      const applyFeedback = document.getElementById("apply_feedback")
+      const searchButton = document.getElementById("search")
+
+      const fulfilledRequestsButton = document.getElementById("fulfilled_requests")
+      const unfulfilledHighPriorityButton = document.getElementById("unfulfilled_requests_high_priority")
+      const requestsBySubjectButton = document.getElementById("requests_by_subject")
+      const requestsByRegionButton = document.getElementById("requests_by_region")
+
+      // -------------------- State --------------------
+      const today = new Date().toISOString().split("T")[0]
+      let offset = 0
+      let currentQuery = ""
+      let editingRequestID = null
+      let currentRequestRows = []
+      let isSearchMode = false
+
+      // -------------------- SQL Strings --------------------
+      const schoolsQuery = "SELECT schoolID, schoolName FROM tblSchool"
+      const subjectsQuery = "SELECT subjectID, subjectName FROM tblSubject"
+
+      const fulfilledRequestsQuery = `
+        SELECT s.schoolName, sub.subjectName, r.requestDateCreated, a.assignmentDateCreated
+        FROM tblRequest AS r
+        JOIN tblAssignment AS a ON r.requestID = a.requestID
+        JOIN tblSchool AS s ON r.schoolID = s.schoolID
+        JOIN tblSubject AS sub ON r.subjectID = sub.subjectID
+        ORDER BY r.requestDateCreated DESC, r.requestID DESC
+      `
+
+      const unfulfilledHighPriorityQuery = `
+        SELECT r.requestID, s.schoolName, sub.subjectName, r.requestDateCreated, d.deprivationRank
+        FROM tblRequest AS r
+        LEFT JOIN tblAssignment AS a ON r.requestID = a.requestID
+        JOIN tblSchool AS s ON r.schoolID = s.schoolID
+        JOIN tblSubject AS sub ON r.subjectID = sub.subjectID
+        JOIN tblDeprivation AS d ON s.SOAcode = d.SOACode
+        WHERE a.requestID IS NULL AND d.deprivationRank > 400
+        ORDER BY d.deprivationRank DESC, r.requestDateCreated DESC, r.requestID DESC
+      `
+
+      const requestsBySubjectQuery = `
+        SELECT sub.subjectName, COUNT(*) AS totalRequests
+        FROM tblRequest AS r
+        JOIN tblSubject AS sub ON r.subjectID = sub.subjectID
+        GROUP BY sub.subjectName
+        ORDER BY totalRequests DESC
+      `
+
+      const requestsByRegionQuery = `
+        SELECT reg.regionName, COUNT(*) AS totalRequests
+        FROM tblRequest AS r
+        JOIN tblSchool AS s ON r.schoolID = s.schoolID
+        JOIN tblDeprivation AS d ON s.SOAcode = d.SOACode
+        JOIN tblRegion AS reg ON d.regionCode = reg.regionCode
+        GROUP BY reg.regionName
+        ORDER BY totalRequests DESC
+      `
+
+      // -------------------- Reusable Functions --------------------
+      const setActiveReport = (buttonId) => {
+        document.querySelectorAll("#report-buttons button").forEach((btn) => {
+          btn.classList.toggle("active", btn.id === buttonId)
+        })
+      }
+
+      const loadSearchPage = async () => {
+        const paginatedSearchQuery = cleanSQL(`${currentQuery} LIMIT 10 OFFSET ${offset}`)
+        const searchResult = await runSQL(paginatedSearchQuery)
+
+        currentRequestRows = searchResult && searchResult.data ? searchResult.data : []
+        renderSearchResults(currentRequestRows)
+      }
+
+      const runReport = async (sql) => {
+        currentQuery = cleanSQL(sql)
+        resultsTable.innerHTML = ""
+
+        await printTable(`${currentQuery} LIMIT 10 OFFSET ${offset}`, "#results_table")
+
+        const totalRows = resultsTable.querySelectorAll("tr").length
+        const dataRowCount = Math.max(0, totalRows - 1)
+
+        if (dataRowCount === 0) {
+          resultsFeedback.style.color = "#666"
+          resultsFeedback.textContent = "No matching results found"
+        } else {
+          resultsFeedback.textContent = ""
+        }
+
+        prevButton.disabled = offset === 0
+        nextButton.disabled = dataRowCount < 10
+      }
+
+      const resetEditMode = () => {
+        editingRequestID = null
+        formFeedback.textContent = ""
+        dateForm.min = today
+        cancelEditButton.style.display = "none"
+        requestFormHeading.textContent = "Add New Request"
+        submitRequestButton.textContent = "Submit"
+        schoolForm.value = ""
+        subjectForm.value = ""
+        descriptionForm.value = ""
+        dateForm.value = ""
+        eduLevelForm.value = ""
+      }
+
+      const enterEditMode = (row) => {
+        editingRequestID = row.requestID
+        dateForm.min = ""
+        cancelEditButton.style.display = "inline-block"
+        requestFormHeading.textContent = "Edit Request"
+        submitRequestButton.textContent = "Update"
+        schoolForm.value = row.schoolID
+        subjectForm.value = row.subjectID
+        descriptionForm.value = row.requestDescription
+        dateForm.value = row.requestDateCreated
+        eduLevelForm.value = row.requestEduLevel
+      }
+
+      const renderSearchResults = (rows) => {
+        resultsTable.innerHTML = ""
+
+        if (rows.length === 0) {
+          resultsFeedback.style.color = "#666"
+          resultsFeedback.textContent = "No matching results found"
+          prevButton.disabled = offset === 0
+          nextButton.disabled = true
+          return
+        }
+
+        resultsFeedback.textContent = ""
+
+        const headerRow = document.createElement("tr")
+
+        const schoolHeader = document.createElement("th")
+        schoolHeader.textContent = "School"
+        headerRow.appendChild(schoolHeader)
+
+        const subjectHeader = document.createElement("th")
+        subjectHeader.textContent = "Subject"
+        headerRow.appendChild(subjectHeader)
+
+        const descriptionHeader = document.createElement("th")
+        descriptionHeader.textContent = "Description"
+        headerRow.appendChild(descriptionHeader)
+
+        const dateHeader = document.createElement("th")
+        dateHeader.textContent = "Date"
+        headerRow.appendChild(dateHeader)
+
+        const eduLevelHeader = document.createElement("th")
+        eduLevelHeader.textContent = "Education Level"
+        headerRow.appendChild(eduLevelHeader)
+
+        const actionsHeader = document.createElement("th")
+        actionsHeader.textContent = "Actions"
+        headerRow.appendChild(actionsHeader)
+
+        resultsTable.appendChild(headerRow)
+
+        rows.forEach((row) => {
+          const dataRow = document.createElement("tr")
+
+          const schoolCell = document.createElement("td")
+          schoolCell.textContent = row.schoolName
+          dataRow.appendChild(schoolCell)
+
+          const subjectCell = document.createElement("td")
+          subjectCell.textContent = row.subjectName
+          dataRow.appendChild(subjectCell)
+
+          const descriptionCell = document.createElement("td")
+          descriptionCell.textContent = row.requestDescription
+          dataRow.appendChild(descriptionCell)
+
+          const dateCell = document.createElement("td")
+          dateCell.textContent = row.requestDateCreated
+          dataRow.appendChild(dateCell)
+
+          const eduLevelCell = document.createElement("td")
+          eduLevelCell.textContent = row.requestEduLevel
+          dataRow.appendChild(eduLevelCell)
+
+          const actionsCell = document.createElement("td")
+
+          const editButton = document.createElement("button")
+          editButton.textContent = "Edit"
+          editButton.style.marginRight = "8px"
+          editButton.addEventListener("click", () => {
+            enterEditMode(row)
+          })
+
+          const deleteButton = document.createElement("button")
+          deleteButton.textContent = "Delete"
+          deleteButton.addEventListener("click", async () => {
+            const confirmed = confirm("Are you sure you want to delete this request?")
+            if (!confirmed) {
+              return
+            }
+
+            const deleteAssignmentQuery = cleanSQL(`
+              DELETE FROM tblAssignment
+              WHERE requestID = ${row.requestID}
+            `)
+
+            const deleteQuery = cleanSQL(`
+              DELETE FROM tblRequest
+              WHERE requestID = ${row.requestID}
+            `)
+
+            try {
+              const deleteAssignmentOk = await runWriteSQL(deleteAssignmentQuery)
+              console.log("DELETE ASSIGNMENT OK:", deleteAssignmentOk)
+
+              const deleteOk = await runWriteSQL(deleteQuery)
+              console.log("DELETE REQUEST OK:", deleteOk)
+
+              if (!deleteOk) {
+                resultsFeedback.style.color = "red"
+                resultsFeedback.textContent = "Something went wrong, please try again"
+                return
+              }
+
+              if (editingRequestID === row.requestID) {
+                resetEditMode()
+              }
+
+              resultsFeedback.style.color = "green"
+              resultsFeedback.textContent = "Request deleted successfully"
+
+              const paginatedCurrentQuery = cleanSQL(`${currentQuery} LIMIT 10 OFFSET ${offset}`)
+              const refreshedResult = await runSQL(paginatedCurrentQuery)
+              currentRequestRows = refreshedResult && refreshedResult.data ? refreshedResult.data : []
+
+              renderSearchResults(currentRequestRows)
+            } catch (error) {
+              resultsFeedback.style.color = "red"
+              resultsFeedback.textContent = "Something went wrong, please try again"
+              console.log(error)
+            }
+          })
+
+          actionsCell.appendChild(editButton)
+          actionsCell.appendChild(deleteButton)
+          dataRow.appendChild(actionsCell)
+
+          resultsTable.appendChild(dataRow)
+        })
+
+        prevButton.disabled = offset === 0
+        nextButton.disabled = rows.length < 10
+      }
+
+      // -------------------- Initial Setup --------------------
+      dateForm.min = today
+      prevButton.disabled = true
+      nextButton.disabled = true
+
+      // -------------------- Dropdown Population --------------------
+      const schoolsResult = await runSQL(schoolsQuery)
+      const subjectsResult = await runSQL(subjectsQuery)
+
+      if (schoolsResult && schoolsResult.data && schoolsResult.data.length > 0) {
+        schoolsResult.data.forEach((element) => {
+          const option = document.createElement("option")
+          option.value = element.schoolID
+          option.textContent = element.schoolName
+          schoolForm.appendChild(option)
+        })
+      }
+
+      if (subjectsResult && subjectsResult.data && subjectsResult.data.length > 0) {
+        subjectsResult.data.forEach((element) => {
+          const optionForm = document.createElement("option")
+          optionForm.value = element.subjectID
+          optionForm.textContent = element.subjectName
+          subjectForm.appendChild(optionForm)
+
+          const optionSearch = document.createElement("option")
+          optionSearch.value = element.subjectID
+          optionSearch.textContent = element.subjectName
+          subjectSearchDropdown.appendChild(optionSearch)
+        })
+      }
+
+      cancelEditButton.addEventListener("click", () => {
+        resetEditMode()
+        formFeedback.textContent = ""
+      })
+
+      // -------------------- Pagination --------------------
+      nextButton.addEventListener("click", async () => {
+        if (currentQuery === "") return
+        offset += 10
+
+        if (isSearchMode) {
+          await loadSearchPage()
+        } else {
+          await runReport(currentQuery)
+        }
+      })
+
+      prevButton.addEventListener("click", async () => {
+        if (offset >= 10) {
+          offset -= 10
+
+          if (isSearchMode) {
+            await loadSearchPage()
+          } else {
+            await runReport(currentQuery)
+          }
+        }
+      })
+
+      // -------------------- Quick Reports --------------------
+      fulfilledRequestsButton.addEventListener("click", async () => {
+        offset = 0
+        isSearchMode = false
+        setActiveReport("fulfilled_requests")
+        await runReport(fulfilledRequestsQuery)
+      })
+
+      unfulfilledHighPriorityButton.addEventListener("click", async () => {
+        offset = 0
+        isSearchMode = false
+        setActiveReport("unfulfilled_requests_high_priority")
+        await runReport(unfulfilledHighPriorityQuery)
+      })
+
+      requestsBySubjectButton.addEventListener("click", async () => {
+        offset = 0
+        isSearchMode = false
+        setActiveReport("requests_by_subject")
+        await runReport(requestsBySubjectQuery)
+      })
+
+      requestsByRegionButton.addEventListener("click", async () => {
+        offset = 0
+        isSearchMode = false
+        setActiveReport("requests_by_region")
+        await runReport(requestsByRegionQuery)
+      })
+
+      // -------------------- Apply Button --------------------
+      applyButton.addEventListener("click", async () => {
+        const groupBy = groupDropdown.value
+        const orderBy = orderDropdown.value
+
+        if (groupBy === "") {
+          applyFeedback.textContent = "Please select a Group By option"
+          return
+        }
+
+        applyFeedback.textContent = ""
+
+        let selectClause = "SELECT COUNT(*) AS totalRequests"
+        let joinClause = ""
+        let groupClause = ""
+        let orderClause = ""
+
+        if (groupBy === "subject") {
+          selectClause = "SELECT sub.subjectName, COUNT(*) AS totalRequests"
+          joinClause += " JOIN tblSubject AS sub ON r.subjectID = sub.subjectID"
+          groupClause = " GROUP BY sub.subjectName"
+
+          if (orderBy === "request_count" || orderBy === "") {
+            orderClause = " ORDER BY totalRequests DESC"
+          } else if (orderBy === "school_name") {
+            orderClause = " ORDER BY sub.subjectName ASC"
+          }
+        } else if (groupBy === "region") {
+          selectClause = "SELECT reg.regionName, COUNT(*) AS totalRequests"
+          joinClause += " JOIN tblDeprivation AS d ON s.SOAcode = d.SOACode"
+          joinClause += " JOIN tblRegion AS reg ON d.regionCode = reg.regionCode"
+          groupClause = " GROUP BY reg.regionName"
+
+          if (orderBy === "request_count" || orderBy === "") {
+            orderClause = " ORDER BY totalRequests DESC"
+          } else if (orderBy === "school_name") {
+            orderClause = " ORDER BY reg.regionName ASC"
+          }
+        } else if (groupBy === "status") {
+          selectClause = "SELECT CASE WHEN a.AssignmentID IS NULL THEN 'Unallocated' WHEN a.assignmentDateClosed IS NULL THEN 'In Progress' ELSE 'Finished' END AS status, COUNT(*) AS totalRequests"
+          joinClause += " LEFT JOIN tblAssignment AS a ON r.requestID = a.requestID"
+          groupClause = " GROUP BY status"
+
+          if (orderBy === "request_count" || orderBy === "") {
+            orderClause = " ORDER BY totalRequests DESC"
+          } else if (orderBy === "school_name") {
+            orderClause = " ORDER BY status ASC"
+          }
+        }
+
+        const applyQuery = `
+          ${selectClause}
+          FROM tblRequest AS r
+          JOIN tblSchool AS s ON r.schoolID = s.schoolID
+          ${joinClause}
+          ${groupClause}
+          ${orderClause}
+        `
+
+        offset = 0
+        isSearchMode = false
+        setActiveReport(null)
+        applyButton.disabled = true
+
+        try {
+          await runReport(applyQuery)
+        } finally {
+          applyButton.disabled = false
+        }
+      })
+
+      // -------------------- Search Button --------------------
+      searchButton.addEventListener("click", async () => {
+        const schoolSearch = schoolSearchInput.value.trim()
+        const subjectSearch = subjectSearchDropdown.value
+        const dateFrom = dateFromSearchInput.value
+        const dateTo = dateToSearchInput.value
+        const statusSearch = statusSearchDropdown.value
+        const regionSearch = regionSearchInput.value.trim()
+
+        if (dateFrom !== "" && dateTo !== "" && dateFrom > dateTo) {
+          searchFeedback.textContent = "Date From cannot be after Date To"
+          return
+        }
+
+        searchFeedback.textContent = ""
+
+        let conditions = []
+        let joinClause = "JOIN tblSchool AS s ON r.schoolID = s.schoolID JOIN tblSubject AS sub ON r.subjectID = sub.subjectID"
+
+        if (schoolSearch !== "") {
+          conditions.push(`s.schoolName LIKE '%${escapeSQL(schoolSearch)}%'`)
+        }
+
+        if (subjectSearch !== "") {
+          const subjectID = parseInt(subjectSearch)
+          if (!isNaN(subjectID)) {
+            conditions.push(`r.subjectID = ${subjectID}`)
+          }
+        }
+
+        if (dateFrom !== "") {
+          conditions.push(`r.requestDateCreated >= '${dateFrom}'`)
+        }
+
+        if (dateTo !== "") {
+          conditions.push(`r.requestDateCreated <= '${dateTo}'`)
+        }
+
+        if (regionSearch !== "") {
+          joinClause += " JOIN tblDeprivation AS d ON s.SOAcode = d.SOACode"
+          joinClause += " JOIN tblRegion AS reg ON d.regionCode = reg.regionCode"
+          conditions.push(`reg.regionName LIKE '%${escapeSQL(regionSearch)}%'`)
+        }
+
+        if (statusSearch === "fulfilled") {
+          joinClause += " JOIN tblAssignment AS a ON r.requestID = a.requestID"
+        }
+
+        if (statusSearch === "unfulfilled") {
+          joinClause += " LEFT JOIN tblAssignment AS a ON r.requestID = a.requestID"
+          conditions.push("a.requestID IS NULL")
+        }
+
+        let whereClause = ""
+        if (conditions.length > 0) {
+          whereClause = "WHERE " + conditions.join(" AND ")
+        }
+
+        const searchQuery = `
+          SELECT
+            r.requestID,
+            r.schoolID,
+            r.subjectID,
+            r.requestDescription,
+            r.requestDateCreated,
+            r.requestEduLevel,
+            s.schoolName,
+            sub.subjectName
+          FROM tblRequest AS r
+          ${joinClause}
+          ${whereClause}
+          ORDER BY r.requestDateCreated DESC, r.requestID DESC
+        `
+
+        offset = 0
+        setActiveReport(null)
+        isSearchMode = true
+        searchButton.disabled = true
+
+        try {
+          currentQuery = cleanSQL(searchQuery)
+          await loadSearchPage()
+        } finally {
+          searchButton.disabled = false
+        }
+      })
+
+      // -------------------- Submit Form --------------------
+      submitRequestButton.addEventListener("click", async () => {
+        const schoolID = parseInt(schoolForm.value)
+        const subjectID = parseInt(subjectForm.value)
+        const description = descriptionForm.value.trim()
+        const date = dateForm.value
+        const eduLevel = eduLevelForm.value
+
+        if (isNaN(schoolID) || isNaN(subjectID) || date === "" || eduLevel === "") {
+          formFeedback.style.color = "red"
+          formFeedback.textContent = "Please fill in all required fields"
+          return
+        }
+
+        if (editingRequestID === null && date < today) {
+          formFeedback.style.color = "red"
+          formFeedback.textContent = "Date cannot be in the past"
+          return
+        }
+
+        submitRequestButton.disabled = true
+
+        const insertQuery = cleanSQL(`
+          INSERT INTO tblRequest (schoolID, subjectID, requestDescription, requestDateCreated, requestEduLevel)
+          VALUES (${schoolID}, ${subjectID}, '${escapeSQL(description)}', '${date}', '${eduLevel}')
+        `)
+
+        const updateQuery = cleanSQL(`
+          UPDATE tblRequest
+          SET
+            schoolID = ${schoolID},
+            subjectID = ${subjectID},
+            requestDescription = '${escapeSQL(description)}',
+            requestDateCreated = '${date}',
+            requestEduLevel = '${eduLevel}'
+          WHERE requestID = ${editingRequestID}
+        `)
+
+        try {
+          const wasEditing = editingRequestID !== null
+
+          const ok = wasEditing
+            ? await runWriteSQL(updateQuery)
+            : await runWriteSQL(insertQuery)
+
+          if (!ok) {
+            formFeedback.style.color = "red"
+            formFeedback.textContent = "Something went wrong, please try again"
+            return
+          }
+
+          formFeedback.style.color = "green"
+          formFeedback.textContent = wasEditing
+            ? "Request updated successfully"
+            : "Request submitted successfully"
+
+          resetEditMode()
+
+          if (wasEditing && currentQuery !== "") {
+            const paginatedCurrentQuery = cleanSQL(`${currentQuery} LIMIT 10 OFFSET ${offset}`)
+            const refreshedResult = await runSQL(paginatedCurrentQuery)
+            currentRequestRows = refreshedResult && refreshedResult.data ? refreshedResult.data : []
+            renderSearchResults(currentRequestRows)
+          }
+        } catch (error) {
+          formFeedback.style.color = "red"
+          formFeedback.textContent = "Something went wrong, please try again"
+          console.log(error)
+        } finally {
+          submitRequestButton.disabled = false
+        }
+      })
+    })
+  </script>
+</body>
+</html>

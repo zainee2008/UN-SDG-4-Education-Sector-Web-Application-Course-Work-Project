@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Home Page</title>
+    <link href="../GeneralCSS/Style.css" rel="stylesheet" />
+
+    <style>
+
+    </style>
+
+</head>
+
+<body>
+    <!-- banner containing image -->
+    <div class="banner" style="text-align: center;">
+        <img src="../Images/lanyon 1600 x 575 .jpg" alt="lanyon banner image">
+    </div>
+
+    <br>
+
+    <div class="nav">
+        <a href="index.html">Home</a> 
+        <a href="my_requests.html">Active Tutor Requests</a> 
+        <a href="submit_request.html">Request a Tutor</a> 
+        <a href="edit_request.html">Modify Tutor Request</a> 
+        <a href="my_tutor.html">View School tutors</a>
+        <a class="nav-switch" href="../staff/index.html">Go to Staff Side</a>
+    </div>
+
+    <div class="main">
+
+
+        <!-- Table shall be populated with request selected on previous page to be edited -->
+        <div id="tableRequestToEdit">
+
+
+        </div>
+        <br>
+        <!--Feedback messages to be presented to the user or their browser-->
+        <div id="message"></div>
+
+        <br>
+
+        <h3>Edit Selected Request</h3>
+
+        <form id="editForm">
+
+            <div class="form-row">
+                <label for="editRequestID">Request ID</label>
+                <input type="text" id="editRequestID" class="readOnly" readonly>
+                <!-- readonly, requestID cannot be edited -->
+            </div>
+
+            <div class="form-row">
+                <label for="editRequestSubject">Request Subject</label>
+                <input type="text" id="editRequestSubject">
+            </div>
+
+            <div class="form-row">
+                <label for="editRequestTier">Request Tier of Education</label>
+                <input type="text" id="editRequestTier">
+            </div>
+
+            <div class="form-row">
+                <label for="editRequestDescription">Request Description</label>
+                <textarea id="editRequestDescription" row="5" cols="50"></textarea>
+            </div>
+
+            <div class="form-row">
+                <label for="editRequestDate">Date Request was Created</label>
+                <input type="text" id="editRequestDate" readonly> <!-- readonly, requestOpenDate cannot be edited -->
+            </div>
+
+            <button type="submit" id="submitEditButton" class="readOnly">Update Request</button>
+        </form>
+
+    </div>
+
+    <script src="../vendor/sqljs/sql-wasm.js"></script>
+    <script src="../js/browser-db.js"></script>
+    <script src="../js/main.js"></script>
+
+    <script>
+
+        // assighn variables to elements 
+        const messageOutput = document.querySelector("#message");
+        const tableRequestToEdit = document.querySelector("#tableRequestToEdit");
+        const submitEditButton = document.querySelector("#submitEditButton");
+
+        submitEditButton.disabled = true; // disable submitEditButton by default, shall be enabled when a request to edit has been passed to this page 
+
+        //ensure that page has loaded before running the code below 
+        document.addEventListener("DOMContentLoaded", async () => {
+
+            resetEditForm(); // reset edit form
+            resetTableRequestToEdit(); // reset table containing details of request to edit 
+
+            // reset message div before running validation
+            resetFeedbackMessage();
+
+            let requestToEdit = getEditRequestSelection(); //get requestToEdit 
+
+            if (!requestToEdit) { // if no requestToEdit is returned, print error message 
+                resetFeedbackMessage();
+                messageOutput.classList.add("errorMessage");
+                messageOutput.textContent = "Error: No request selected for editing. Please go to the 'View the Status of ongoing requests for tutors' page and select a request to edit.";
+                submitEditButton.disabled = true //disable submit button 
+                return; // exit script 
+            }
+
+            // get string to apply in fields in table and edit field 
+            requestToEdit.requestSubjectName = await getRequestSubjectName(requestToEdit); 
+            requestToEdit.requestEduLevel = await getRequestEduLevel(requestToEdit);
+
+            // if this point is reached, a valid request was found
+            resetFeedbackMessage();
+            messageOutput.classList.add("feedbackMessage");
+            messageOutput.textContent = "Request loaded successfully. You may now edit the details below.";
+
+            populateRequestToEditTable(requestToEdit, tableRequestToEdit); // pass request to edit 
+            populateEditForm(requestToEdit);
+
+            submitEditButton.disabled = false; // make Update Request button usable 
+
+        });
+
+        // Update the selected request in the database with the details currently in the form fields.
+        document.querySelector("#editForm").addEventListener("submit", async (event) => {
+
+            event.preventDefault(); // prevent default form submission behaviour
+
+            const updatedRequest = {
+                requestID: Number(document.querySelector("#editRequestID").value),
+                requestSubjectName: document.querySelector("#editRequestSubject").value.trim(),
+                requestEduLevel: document.querySelector("#editRequestTier").value.trim(),
+                requestDescription: document.querySelector("#editRequestDescription").value.trim(),
+                requestOpenDate: document.querySelector("#editRequestDate").value
+            };
+
+            // Validate the updated request details before attempting to update the database. TODO 
+            const validateEditMessage = validateRequestEdit(updatedRequest); // check updated request details are valid 
+
+            if (validateEditMessage !== null) { // if updated request details are not valid, print message and exit function 
+                resetFeedbackMessage();
+                messageOutput.classList.add("errorMessage");
+                messageOutput.textContent = validateEditMessage;
+                return; // exit function, will not attempt to update database 
+            }
+
+            // create SQL query to update request in DB, will need to determine the subjectID of written subject name given in the editted request when submitted 
+            const updateRequestSQL = `
+                UPDATE tblRequest
+                SET 
+                    requestEduLevel = '${updatedRequest.requestEduLevel}', 
+                    requestDescription = '${updatedRequest.requestDescription}',
+                    subjectID = (
+                        SELECT subjectID 
+                        FROM tblSubject 
+                        WHERE subjectName = '${updatedRequest.requestSubjectName}'
+                    )
+                WHERE requestID = ${updatedRequest.requestID};
+            `;
+
+            // send SQL query to database and await response
+            const result = await runWriteSQL(updateRequestSQL);
+
+            if (result) { // if update was successful, print success message and reset form and table 
+                resetFeedbackMessage();
+                messageOutput.classList.add("feedbackMessage");
+                messageOutput.textContent = "Request updated successfully.";
+
+                // Refresh the table with the updated values
+                resetTableRequestToEdit();
+                populateRequestToEditTable(updatedRequest, tableRequestToEdit)
+                return;
+            } else { // if update was not successful, print error message 
+                resetFeedbackMessage();
+                messageOutput.classList.add("errorMessage");
+                messageOutput.textContent = "Unable to update the request. Please try again.";
+            }
+
+        });
+
+        const populateRequestToEditTable = (requestToEdit, tableRequestToEdit) => {
+
+            //create table element 
+            const requestTable = document.createElement("table");
+
+            // CREATE TABLE HEADER 
+
+            //create table header row
+            const requestHeaderRow = document.createElement("tr");
+
+            //create and populate header row cells 
+
+            // Request ID column 
+            const requestIDHeader = document.createElement("th");
+            requestIDHeader.textContent = "Request ID";
+            requestHeaderRow.appendChild(requestIDHeader);
+
+            // Request Subject column 
+            const requestSubjectHeader = document.createElement("th");
+            requestSubjectHeader.textContent = "Request Subject";
+            requestHeaderRow.appendChild(requestSubjectHeader);
+
+            // Request Tier of Education column 
+            const requestEduLevelHeader = document.createElement("th");
+            requestEduLevelHeader.textContent = "Request Tier of Education";
+            requestHeaderRow.appendChild(requestEduLevelHeader);
+
+            // Request Description column 
+            const requestDescriptionHeader = document.createElement("th");
+            requestDescriptionHeader.textContent = "Request Description";
+            requestHeaderRow.appendChild(requestDescriptionHeader);
+
+            // Request Date Request was Created column 
+            const requestOpenDateHeader = document.createElement("th");
+            requestOpenDateHeader.textContent = "Date Request was Created";
+            requestHeaderRow.appendChild(requestOpenDateHeader);
+
+            // CREATE REQUEST TABLE BODY
+
+            // create/populate request row
+            const requestRow = document.createElement("tr");
+
+            // create/populate Request ID cell
+            const requestIDCell = document.createElement("td");
+            requestIDCell.textContent = requestToEdit.requestID;
+            requestRow.appendChild(requestIDCell);
+
+            // create/populate Subject cell
+            const requestSubjectCell = document.createElement("td");
+            requestSubjectCell.textContent = requestToEdit.requestSubjectName;
+            requestRow.appendChild(requestSubjectCell);
+
+            // create/populate Tier of Education cell
+            const requestEduLevelCell = document.createElement("td");
+            requestEduLevelCell.textContent = requestToEdit.requestEduLevel;
+            requestRow.appendChild(requestEduLevelCell);
+
+            // create/populate Description cell
+            const requestDescriptionCell = document.createElement("td");
+            requestDescriptionCell.textContent = requestToEdit.requestDescription;
+            requestRow.appendChild(requestDescriptionCell);
+
+            // create/populate Date Request was Created cell
+            const requestOpenDateCell = document.createElement("td");
+            requestOpenDateCell.textContent = requestToEdit.requestOpenDate;
+            requestRow.appendChild(requestOpenDateCell);
+
+            // append header row and request row to table
+            requestTable.appendChild(requestHeaderRow);
+            requestTable.appendChild(requestRow);
+
+            // append table to page
+            tableRequestToEdit.appendChild(requestTable);
+
+        };
+
+        const populateEditForm = (requestToEdit) => {
+
+            // Copy the chosen student's data from the table into the form fields.
+            document.querySelector("#editRequestID").value = requestToEdit.requestID;
+            document.querySelector("#editRequestSubject").value = requestToEdit.requestSubjectName;
+            document.querySelector("#editRequestTier").value = requestToEdit.requestEduLevel;
+            document.querySelector("#editRequestDescription").value = requestToEdit.requestDescription;
+            document.querySelector("#editRequestDate").value = requestToEdit.requestOpenDate;
+
+        };
+
+        const resetTableRequestToEdit = () => {
+            const tableRequestToEdit = document.querySelector("#tableRequestToEdit");
+            tableRequestToEdit.innerHTML = ""; // Clear the content of the table output element
+        };
+
+        const resetEditForm = () => {
+            // Clear the form fields.
+            const editForm = document.querySelector("#editForm");
+
+            editForm.reset();
+        };
+
+        //function to clear feedback messages 
+        const resetFeedbackMessage = () => {
+
+            //clear error/feedback messages 
+            messageOutput.textContent = "";
+
+            //clear classes from search messages to reset internal CSS styling 
+            messageOutput.classList.remove("errorMessage", "feedbackMessage");
+        };
+
+        const getRequestSubjectName = async (requestToEdit) => {
+
+            // write sql query to get the name of the subject with subjectID number given in requestToEdit 
+            const sql = `SELECT subjectName FROM tblSubject WHERE subjectID = ${Number(requestToEdit.requestSubject)}`;
+
+            const subjectNameSQL = await runSQL(sql); // will get name of subject 
+
+            if (subjectNameSQL && subjectNameSQL.data && subjectNameSQL.data.length > 0) { // if sql query successful
+                return subjectNameSQL.data[0].subjectName; // get string containing name of subject
+            }
+
+            return null; // else return null 
+
+        };
+
+        // Need to get selected Request EduLevel directly due to changes on other webpages and functions 
+        const getRequestEduLevel = async (requestToEdit) => {
+
+            const sql = `SELECT requestEduLevel FROM tblRequest WHERE requestID = ${Number(requestToEdit.requestID)}`; // will get eduLevel
+
+            const result = await runSQL(sql); // if sql query successful
+            if (result && result.data && result.data.length > 0) {
+                return result.data[0].requestEduLevel; // get string containing eduLevel
+            }
+
+            return null; // else return null 
+        };
+
+    </script>
+
+</body>
+
+</html>
